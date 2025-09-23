@@ -75,9 +75,9 @@ export function useAuth() {
       );
 
       setTimeout(() => {
-        console.log("logen in");
+        console.log("log in please");
       }, 3000);
-      router.push("/auth/verify-email");
+      router.push("/auth");
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Registration failed";
