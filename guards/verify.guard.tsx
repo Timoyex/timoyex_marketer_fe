@@ -19,17 +19,13 @@ export function VerifyGuard({
   const { isAuthenticated, user } = useAuthStore();
 
   useEffect(() => {
-    if (requireAuth && !isAuthenticated) {
-      router.push("/auth");
-    }
-
     if (
       !requireAuth &&
       isAuthenticated &&
       requireVerified &&
       !user?.isVerified
     ) {
-      router.push("/verify");
+      router.push("/auth/verify-rmail");
     }
 
     if (!requireAuth && isAuthenticated) {

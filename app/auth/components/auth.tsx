@@ -1,7 +1,14 @@
 // app/auth/page.tsx
 "use client";
-
 import { useState } from "react";
+import Link from "next/link";
+import {
+  notFound,
+  useParams,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
+import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +24,6 @@ import {
   ArrowLeft,
   Layers2,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,10 +37,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import Link from "next/link";
-import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
-
 import {
   Form,
   FormControl,
@@ -77,18 +79,24 @@ export const registerSchema = z
   });
 
 export default function Auth() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
 
-  const { user, isAuthenticated, login, loginError, register, registerError } =
-    useAuth();
+  const tag = params.tag as string;
 
-  const mode = searchParams.get("mode") || searchParams.get("tab") || "login";
+  if (!["login", "register"].includes(tag)) {
+    notFound();
+  }
+
+  const { login, register } = useAuth();
+
   const referralCode =
     searchParams.get("ref") || searchParams.get("code") || "";
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState(mode);
+  const [activeTab, setActiveTab] = useState(tag);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -132,6 +140,11 @@ export default function Auth() {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    // Navigate to the new auth route
+    router.push(`/auth/${value}`);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -153,7 +166,7 @@ export default function Auth() {
         </div>
 
         <Card className="shadow-xl border-0 p-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>

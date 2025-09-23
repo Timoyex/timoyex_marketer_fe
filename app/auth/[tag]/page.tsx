@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { FE_URL } from "@/app.config";
-import Auth from "./components/auth";
+import Auth from "../components/auth";
 import { Suspense } from "react";
-import LandingPage from "../page";
+import LandingPage from "../../page";
 
 export const metadata: Metadata = {
   title: "Auth | Affiliate Dashboard",

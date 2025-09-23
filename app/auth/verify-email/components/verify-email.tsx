@@ -48,7 +48,7 @@ export default function VerifyEmailPage() {
         {/* Back to Auth Link */}
         <div className="text-center mb-8">
           <Link
-            href="/auth"
+            href="/auth/login"
             className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />

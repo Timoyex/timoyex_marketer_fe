@@ -23,13 +23,13 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center space-x-4">
               <Link
-                href="/auth?login"
+                href="/auth/login"
                 className="text-gray-600 hover:text-gray-900 transition-colors"
               >
                 Sign In
               </Link>
               <Button asChild>
-                <Link href="/auth?register">Get Started</Link>
+                <Link href="/auth/register">Get Started</Link>
               </Button>
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function LandingPage() {
               className="text-lg px-8 py-3 flex items-center justify-center mx-auto"
               asChild
             >
-              <Link href="/auth">
+              <Link href="/auth/register">
                 Get Started Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>

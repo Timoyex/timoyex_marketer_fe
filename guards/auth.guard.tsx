@@ -15,7 +15,7 @@ export function AuthGuard({ children, requireAuth = true }: AuthGuardProps) {
 
   useEffect(() => {
     if (requireAuth && !isAuthenticated) {
-      router.push("/auth");
+      router.push("/auth/login");
     }
 
     if (!requireAuth && isAuthenticated) {

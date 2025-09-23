@@ -3,7 +3,6 @@ import { authApi, type LoginRequest, type RegisterRequest } from "@/lib/api";
 import { useAuthStore } from "@/lib/stores";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner"; // or your preferred toast library
-import { useEffect } from "react";
 
 export function useAuth() {
   const router = useRouter();
@@ -70,14 +69,12 @@ export function useAuth() {
         access_token: data.data.access_token,
         refresh_token: data.data.refresh_token,
       });
-      toast.success(
-        "Account created successfully! Please check you mail for verification"
-      );
+      toast.success("Account created successfully! Please Log In");
 
       setTimeout(() => {
         console.log("log in please");
       }, 3000);
-      router.push("/auth");
+      router.push("/auth/login");
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Registration failed";
@@ -134,12 +131,12 @@ export function useAuth() {
     onSuccess: () => {
       logout();
       toast.success("Logged out successfully");
-      router.push("/auth");
+      router.push("/auth/login");
     },
     onError: () => {
       // Still logout locally even if API call fails
       logout();
-      router.push("/auth");
+      router.push("/auth/login");
     },
   });
 

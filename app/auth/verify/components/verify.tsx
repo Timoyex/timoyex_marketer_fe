@@ -211,7 +211,7 @@ export default function EmailVerifiedPage() {
 
               <div className="text-center">
                 <Button asChild className="w-full" size="lg">
-                  <Link href="/auth">
+                  <Link href="/auth/login">
                     Log In
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
@@ -272,7 +272,7 @@ export default function EmailVerifiedPage() {
         {/* Footer */}
         <div className="text-center mt-8">
           <Link
-            href="/auth"
+            href="/auth/login"
             className="text-sm text-gray-500 hover:text-gray-700"
           >
             Back to Sign In

@@ -8,8 +8,7 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/join/")) {
     const code = pathname.split("/")[2] || "";
 
-    const url = new URL("/auth", request.url);
-    url.searchParams.set("mode", "register");
+    const url = new URL("/auth/register", request.url);
     url.searchParams.set("ref", code);
 
     return NextResponse.redirect(url);

@@ -97,7 +97,7 @@ apiClient.interceptors.response.use(
             queryClient.clear();
           }
 
-          window.location.href = "/auth";
+          window.location.href = "/auth/login";
         }
 
         return Promise.reject(error);
@@ -130,7 +130,7 @@ apiClient.interceptors.response.use(
             queryClient.clear();
           }
 
-          window.location.href = "/auth";
+          window.location.href = "/auth/login";
         }
 
         return Promise.reject(refreshError);

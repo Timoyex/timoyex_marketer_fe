@@ -220,7 +220,7 @@ export function Sidebar() {
                 )}
                 asChild
               >
-                <Link href="/auth" onClick={logout}>
+                <Link href="/auth/login" onClick={logout}>
                   <LogOut className="h-5 w-5 flex-shrink-0" />
                   {!sidebarCollapsed && <span>Logout</span>}
                 </Link>
@@ -331,7 +331,7 @@ export function Sidebar() {
                   asChild
                   onClick={closeMobileSidebar}
                 >
-                  <Link href="/auth">
+                  <Link href="/auth/login">
                     <LogOut className="h-5 w-5" />
                     Logout
                   </Link>
