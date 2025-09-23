@@ -1,9 +1,11 @@
+import Demo from "@/components/custom/demo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 
 const RecentActivity = ({ recent }: { recent: Array<Record<string, any>> }) => {
   return (
-    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200">
+    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 relative">
+      <Demo />
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-card-foreground text-sm sm:text-base">
           <div className="p-1.5 bg-orange-100 rounded-lg">

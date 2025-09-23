@@ -31,6 +31,7 @@ import {
   Legend,
 } from "recharts";
 import { InfoCard } from "@/components/custom/infocard";
+import Demo from "@/components/custom/demo";
 
 // Sample earnings data
 const monthlyEarnings = [
@@ -259,7 +260,8 @@ export function EarningsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between relative">
+        <Demo />
         <div>
           <h2 className="text-3xl font-bold text-foreground">Earnings</h2>
           <p className="text-muted-foreground">
@@ -283,13 +285,15 @@ export function EarningsSection() {
             value={item.value}
             key={index}
             iconBg={item.iconBg}
+            isDemo={true}
           />
         ))}
       </div>
 
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Earnings Trend Chart */}
-        <Card className="bg-card border-border shadow-sm">
+        <Card className="bg-card border-border shadow-sm relative">
+          <Demo />
           <CardHeader>
             <CardTitle className="text-card-foreground">
               Earnings Trend
@@ -349,7 +353,8 @@ export function EarningsSection() {
         </Card>
 
         {/* Commission Breakdown */}
-        <Card className="bg-card border-border shadow-sm">
+        <Card className="bg-card border-border shadow-sm relative">
+          <Demo />
           <CardHeader>
             <CardTitle className="text-card-foreground">
               Commission Breakdown
@@ -423,7 +428,8 @@ export function EarningsSection() {
       </div>
 
       {/* Payment History */}
-      <Card className="bg-card border-border shadow-sm">
+      <Card className="bg-card border-border shadow-sm relative">
+        <Demo />
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-card-foreground">
             <div className="p-1.5 bg-blue-100 rounded-lg">

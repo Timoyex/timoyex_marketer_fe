@@ -33,9 +33,13 @@ export interface TeamStats {
 }
 
 export interface TeamResponse extends EndpointResponse {
-  data: Array<
-    Member & { total: number; page: number; limit: number; totalPages: number }
-  >;
+  data: {
+    members: Array<Member>;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 export interface TeamStatsResponse extends EndpointResponse {
   data: TeamStats;

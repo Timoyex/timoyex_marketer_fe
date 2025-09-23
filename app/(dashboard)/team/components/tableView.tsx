@@ -18,7 +18,7 @@ const TeamTableView = ({ data }: { data: Array<Record<string, any>> }) => {
           <TableHead>Join Date</TableHead>
           <TableHead>Level</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="text-right">Recruits</TableHead>
+          {/* <TableHead className="text-right">Recruits</TableHead> */}
           <TableHead className="text-right">Earnings</TableHead>
         </TableRow>
       </TableHeader>
@@ -27,14 +27,16 @@ const TeamTableView = ({ data }: { data: Array<Record<string, any>> }) => {
           <TableRow key={member.id}>
             <TableCell>
               <div>
-                <div className="font-medium text-foreground">{member.name}</div>
+                <div className="font-medium text-foreground">
+                  {member.firstName || ""} {member.lastName || ""}
+                </div>
                 <div className="text-sm text-muted-foreground">
                   {member.email}
                 </div>
               </div>
             </TableCell>
             <TableCell className="text-muted-foreground">
-              {formatDate(member.joinDate)}
+              {formatDate(member.createdAt)}
             </TableCell>
             <TableCell>
               <Badge
@@ -46,16 +48,16 @@ const TeamTableView = ({ data }: { data: Array<Record<string, any>> }) => {
             </TableCell>
             <TableCell>
               <Badge
-                variant={member.status === "Active" ? "default" : "secondary"}
+                variant={member.status === "active" ? "default" : "secondary"}
               >
                 {member.status}
               </Badge>
             </TableCell>
-            <TableCell className="text-right font-medium">
+            {/* <TableCell className="text-right font-medium">
               {member.recruits}
-            </TableCell>
+            </TableCell> */}
             <TableCell className="text-right font-medium">
-              ₦{member.earnings.toLocaleString()}
+              ₦{member?.earnings?.toLocaleString() || 0}
             </TableCell>
           </TableRow>
         ))}

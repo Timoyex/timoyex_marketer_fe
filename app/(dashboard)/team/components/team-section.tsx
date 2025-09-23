@@ -27,164 +27,21 @@ import { InfoCard } from "@/components/custom/infocard";
 import { copyToClipboard } from "@/lib/utils";
 import TeamCardView from "./cardView";
 import TeamTableView from "./tableView";
-
-// Sample team data
-const teamMembers = [
-  {
-    id: 1,
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    joinDate: "2024-01-15",
-    level: 2,
-    status: "Active",
-    recruits: 12,
-    earnings: 2400,
-  },
-  {
-    id: 2,
-    name: "Bob Smith",
-    email: "bob@example.com",
-    joinDate: "2024-02-20",
-    level: 1,
-    status: "Active",
-    recruits: 5,
-    earnings: 850,
-  },
-  {
-    id: 3,
-    name: "Carol Davis",
-    email: "carol@example.com",
-    joinDate: "2024-01-08",
-    level: 3,
-    status: "Active",
-    recruits: 25,
-    earnings: 4200,
-  },
-  {
-    id: 4,
-    name: "David Wilson",
-    email: "david@example.com",
-    joinDate: "2024-03-12",
-    level: 1,
-    status: "Inactive",
-    recruits: 3,
-    earnings: 450,
-  },
-  {
-    id: 5,
-    name: "Emma Brown",
-    email: "emma@example.com",
-    joinDate: "2024-02-05",
-    level: 2,
-    status: "Active",
-    recruits: 18,
-    earnings: 3100,
-  },
-  {
-    id: 6,
-    name: "Frank Miller",
-    email: "frank@example.com",
-    joinDate: "2024-01-22",
-    level: 4,
-    status: "Active",
-    recruits: 45,
-    earnings: 7800,
-  },
-  {
-    id: 7,
-    name: "Grace Lee",
-    email: "grace@example.com",
-    joinDate: "2024-03-01",
-    level: 1,
-    status: "Active",
-    recruits: 8,
-    earnings: 1200,
-  },
-  {
-    id: 8,
-    name: "Henry Taylor",
-    email: "henry@example.com",
-    joinDate: "2024-02-14",
-    level: 2,
-    status: "Active",
-    recruits: 15,
-    earnings: 2700,
-  },
-  {
-    id: 9,
-    name: "Ivy Chen",
-    email: "ivy@example.com",
-    joinDate: "2024-01-30",
-    level: 3,
-    status: "Active",
-    recruits: 32,
-    earnings: 5400,
-  },
-  {
-    id: 10,
-    name: "Jack Anderson",
-    email: "jack@example.com",
-    joinDate: "2024-03-08",
-    level: 1,
-    status: "Inactive",
-    recruits: 2,
-    earnings: 300,
-  },
-  {
-    id: 11,
-    name: "Kate Williams",
-    email: "kate@example.com",
-    joinDate: "2024-01-18",
-    level: 2,
-    status: "Active",
-    recruits: 20,
-    earnings: 3500,
-  },
-  {
-    id: 12,
-    name: "Liam Garcia",
-    email: "liam@example.com",
-    joinDate: "2024-02-25",
-    level: 1,
-    status: "Active",
-    recruits: 7,
-    earnings: 980,
-  },
-  {
-    id: 13,
-    name: "Maya Patel",
-    email: "maya@example.com",
-    joinDate: "2024-01-12",
-    level: 3,
-    status: "Active",
-    recruits: 28,
-    earnings: 4800,
-  },
-  {
-    id: 14,
-    name: "Noah Rodriguez",
-    email: "noah@example.com",
-    joinDate: "2024-03-05",
-    level: 1,
-    status: "Active",
-    recruits: 4,
-    earnings: 600,
-  },
-  {
-    id: 15,
-    name: "Olivia Martinez",
-    email: "olivia@example.com",
-    joinDate: "2024-02-10",
-    level: 2,
-    status: "Active",
-    recruits: 16,
-    earnings: 2900,
-  },
-];
+import { useProfile } from "@/hooks/profile.hook";
+import { useTeam } from "@/hooks/team.hook";
+import { SkeletalInfoCard } from "@/components/custom/skeleton";
 
 const ITEMS_PER_PAGE = 10;
 
 export function TeamSection() {
+  const { profileQuery, isLoading } = useProfile();
+  const {
+    teamStats: memberStats,
+    teamStatsIsLoading,
+    downlineMembers,
+    downlineIsLoading,
+  } = useTeam(profileQuery.data?.marketerCode || ""); //tanstack query
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -192,27 +49,31 @@ export function TeamSection() {
   const [viewMode, setViewMode] = useState<"table" | "card">("table");
 
   const handleInviteMember = async () => {
-    const referralLink = "https://yourplatform.com/join?ref=JOHN123";
+    const referralLink = `https://yourplatform.com/join/${profileQuery.data?.marketerCode}`;
     await copyToClipboard(referralLink);
   };
 
-  const filteredMembers = useMemo(() => {
-    return teamMembers.filter((member) => {
-      const matchesSearch =
-        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" ||
-        member.status.toLowerCase() === statusFilter.toLowerCase();
-      const matchesLevel =
-        levelFilter === "all" || member.level.toString() === levelFilter;
+  const filteredMembers =
+    useMemo(() => {
+      const teamMembers = downlineMembers?.members;
+      return teamMembers?.filter((member) => {
+        const matchesSearch =
+          member.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          member.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          member.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus =
+          statusFilter === "all" ||
+          member.status.toLowerCase() === statusFilter.toLowerCase();
+        const matchesLevel =
+          levelFilter === "all" || member.level?.toString() === levelFilter;
 
-      return matchesSearch && matchesStatus && matchesLevel;
-    });
-  }, [searchTerm, statusFilter, levelFilter]);
+        return matchesSearch && matchesStatus && matchesLevel;
+      });
+    }, [searchTerm, statusFilter, levelFilter, downlineIsLoading]) || [];
 
   const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  console.log(filteredMembers);
   const paginatedMembers = filteredMembers.slice(
     startIndex,
     startIndex + ITEMS_PER_PAGE
@@ -222,30 +83,28 @@ export function TeamSection() {
     {
       title: "Direct Recruits",
       icon: <UserPlus className="h-5 w-5 text-blue-500" />,
-      value: teamMembers.filter((m) => m.status === "Active").length,
-      desc: "Active direct recruits",
+      value: memberStats?.directMembers || 0,
+      desc: "Direct Members",
     },
     {
       title: "Total Network",
       icon: <Network className="h-5 w-5 text-green-500" />,
-      value: teamMembers.length * 3,
+      value: memberStats?.totalDownlines || 0,
       desc: "Including sub-levels",
     },
     {
       title: "Total Revenue",
       icon: <TrendingUp className="h-5 w-5 text-purple-500" />,
-      value: `₦${(
-        teamMembers.reduce((sum, member) => sum + member.earnings, 0) * 1.5
-      ).toLocaleString()}`,
+      value: `₦${memberStats?.totalEarnings?.toLocaleString() || 0}`,
       desc: "All-time revenue",
+      isDemo: true,
     },
     {
       title: "Team Earnings",
       icon: <DollarSign className="h-5 w-5 text-orange-500" />,
-      value: `₦${teamMembers
-        .reduce((sum, member) => sum + member.earnings, 0)
-        .toLocaleString()}`,
+      value: `₦${memberStats?.totalEarnings?.toLocaleString() || 0}`,
       desc: "Total team commissions",
+      isDemo: true,
     },
   ];
 
@@ -261,6 +120,7 @@ export function TeamSection() {
         <Button
           onClick={handleInviteMember}
           className="flex items-center gap-2"
+          disabled={isLoading}
         >
           <Share className="h-4 w-4" />
           Invite Member
@@ -268,16 +128,22 @@ export function TeamSection() {
       </div>
 
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        {teamStats.map((stat) => (
-          <InfoCard
-            key={stat.title}
-            title={stat.title}
-            desc={stat.desc}
-            value={stat.value}
-            icon={stat.icon}
-            iconBg="bg-transparent"
-          />
-        ))}
+        {teamStatsIsLoading &&
+          Array(4)
+            .fill(0)
+            .map((item, index) => <SkeletalInfoCard key={index} />)}
+        {!teamStatsIsLoading &&
+          teamStats.map((stat) => (
+            <InfoCard
+              key={stat.title}
+              title={stat.title}
+              desc={stat.desc}
+              value={stat.value}
+              icon={stat.icon}
+              iconBg="bg-transparent"
+              isDemo={stat.isDemo || false}
+            />
+          ))}
       </div>
 
       {/* Filters and Search */}

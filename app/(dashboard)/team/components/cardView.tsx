@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { DollarSign, Mail, Calendar, Users } from "lucide-react";
 import { formatDate, getLevelBadgeColor } from "@/lib/utils";
+import Demo from "@/components/custom/demo";
 
 const TeamCardView = ({ data }: { data: Array<Record<string, any>> }) => {
   return (
@@ -17,14 +18,12 @@ const TeamCardView = ({ data }: { data: Array<Record<string, any>> }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {member.name
-                    .split(" ")
-                    .map((n: any) => n[0])
-                    .join("")}
+                  {member.firstName?.charAt(0).toUpperCase() || ""}{" "}
+                  {member.lastName?.charAt(0).toUpperCase() || ""}
                 </div>
                 <div>
                   <CardTitle className="text-base font-semibold text-card-foreground">
-                    {member.name}
+                    {member.firstName || ""} {member.lastName || ""}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <Mail className="h-3 w-3" />
@@ -44,7 +43,7 @@ const TeamCardView = ({ data }: { data: Array<Record<string, any>> }) => {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">
-                  Joined {formatDate(member.joinDate)}
+                  Joined {formatDate(member.createdAt)}
                 </span>
               </div>
               <Badge
@@ -55,7 +54,8 @@ const TeamCardView = ({ data }: { data: Array<Record<string, any>> }) => {
               </Badge>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-2 bg-muted/50 rounded-lg">
+              <div className="text-center p-2 bg-muted/50 rounded-lg relative">
+                <Demo size="xs" />
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Users className="h-4 w-4 text-blue-500" />
                   <span className="text-xs text-muted-foreground">
@@ -63,7 +63,7 @@ const TeamCardView = ({ data }: { data: Array<Record<string, any>> }) => {
                   </span>
                 </div>
                 <div className="text-lg font-semibold text-foreground">
-                  {member.recruits}
+                  {member.recruits || 0}
                 </div>
               </div>
               <div className="text-center p-2 bg-muted/50 rounded-lg">
@@ -74,7 +74,7 @@ const TeamCardView = ({ data }: { data: Array<Record<string, any>> }) => {
                   </span>
                 </div>
                 <div className="text-lg font-semibold text-foreground">
-                  ₦{member.earnings.toLocaleString()}
+                  ₦{member?.earnings?.toLocaleString() || 0}
                 </div>
               </div>
             </div>

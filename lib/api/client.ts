@@ -7,8 +7,6 @@ import { useAuthStore } from "@/lib/stores";
 import { authApi } from "./auth";
 import { FE_URL } from "@/app.config";
 
-console.log("env url", FE_URL);
-
 const API_BASE_URL = FE_URL || "https://timoyex-affiliate-dash-api.vercel.app";
 
 export const apiClient = axios.create({

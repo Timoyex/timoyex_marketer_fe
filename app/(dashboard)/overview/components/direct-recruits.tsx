@@ -1,3 +1,4 @@
+import Demo from "@/components/custom/demo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer } from "@/components/ui/chart";
 import { Users } from "lucide-react";
@@ -18,7 +19,8 @@ const DirectRecruitsChart = ({
   data: Array<Record<string, any>>;
 }) => {
   return (
-    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 overflow-hidden">
+    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 overflow-hidden relative">
+      <Demo />
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-card-foreground text-sm sm:text-base">
           <div className="p-1.5 bg-green-100 rounded-lg">
