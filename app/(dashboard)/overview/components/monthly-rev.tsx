@@ -19,7 +19,7 @@ const MonthlyRevenueChart = ({
   data: Array<Record<string, any>>;
 }) => {
   return (
-    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 overflow-hidden">
+    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 overflow-hidden relative">
       <Demo />
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-card-foreground text-sm sm:text-base">
