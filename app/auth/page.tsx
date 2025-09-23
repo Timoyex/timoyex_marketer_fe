@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { FE_URL } from "@/app.config";
 import Auth from "./components/auth";
+import { Suspense } from "react";
+import LandingPage from "../page";
 
 export const metadata: Metadata = {
   title: "Auth | Affiliate Dashboard",
@@ -28,7 +30,9 @@ export const metadata: Metadata = {
 const Page = () => {
   return (
     <div className="w-full h-full">
-      <Auth />
+      <Suspense fallback={<LandingPage />}>
+        <Auth />
+      </Suspense>
     </div>
   );
 };
