@@ -31,6 +31,7 @@ export function useProfile() {
   >({
     mutationFn: async ({ data, hasImage }) => {
       let payload: Partial<UserProfile> | FormData = data;
+
       if (hasImage) {
         payload = simpleJsonToFormData(data);
       }

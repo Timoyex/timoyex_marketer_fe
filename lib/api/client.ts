@@ -58,7 +58,6 @@ apiClient.interceptors.request.use(
         "Sending FormData (not logging contents to prevent corruption)"
       );
     } else {
-      console.log("Regular data:", config.data);
     }
 
     return config;

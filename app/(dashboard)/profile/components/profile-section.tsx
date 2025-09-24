@@ -21,7 +21,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -41,36 +47,40 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useProfile } from "@/hooks/profile.hook";
-import { getChangedValues } from "@/lib/form.utils";
+import { cleanPayload, getChangedValues } from "@/lib/form.utils";
 import { toast } from "sonner";
+import { SkeletalForm } from "@/components/custom/skeleton";
 
 // Schemas
 const personalInfoSchema = z.object({
-  firstName: z.string().min(2),
-  middleName: z.string().optional(),
-  lastName: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().min(10),
-  alternatePhone: z.string().optional(),
-  gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional(),
-  dateOfBirth: z.string().optional(),
-  nationality: z.string().optional(),
-  address: z.string().min(10),
+  firstName: z.string().min(2).nullish(),
+  middleName: z.string().nullish(),
+  lastName: z.string().min(2).nullish(),
+  email: z.string().email().nullish(),
+  phone: z.string().min(10).nullish(),
+  alternatePhone: z.string().nullish(),
+  gender: z
+    .enum(["male", "female", "other", "prefer-not-to-say"])
+    .nullable()
+    .optional(),
+  dateOfBirth: z.string().nullish(),
+  nationality: z.string().nullish(),
+  address: z.string().min(10).nullish(),
 });
 
 const bankDetailsSchema = z.object({
-  bankName: z.string().min(1),
-  accountName: z.string().optional(),
+  bankName: z.string().min(1).nullish(),
+  accountName: z.string().nullish(),
   accountNumber: z.string().min(10).max(10),
-  bvn: z.string().min(11).max(11).optional(),
+  bvn: z.string().min(11).max(11).nullish(),
 });
 
 const nextOfKinSchema = z.object({
-  name: z.string().optional(),
-  relationship: z.string().optional(),
-  phoneNumber: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
-  address: z.string().optional(),
+  name: z.string().nullish(),
+  relationship: z.string().nullish(),
+  phoneNumber: z.string().nullish(),
+  email: z.string().email().nullish().or(z.literal("")),
+  address: z.string().nullish(),
 });
 
 export const identificationSchema = z.object({
@@ -79,8 +89,7 @@ export const identificationSchema = z.object({
   }),
   key: z
     .instanceof(File)
-    .refine((file) => file.size <= 10 * 1024 * 1024, "File must be <= 10MB")
-    .optional(),
+    .refine((file) => file.size <= 10 * 1024 * 1024, "File must be <= 10MB"),
 });
 
 // Options
@@ -116,34 +125,44 @@ export function ProfileSection() {
   // Forms
   const personalForm = useForm({
     resolver: zodResolver(personalInfoSchema),
-    defaultValues: profileQuery.data || {},
+    defaultValues: async () => profileQuery.data || {},
   });
   const bankForm = useForm({
     resolver: zodResolver(bankDetailsSchema),
-    defaultValues: profileQuery.data?.bankAccount || {},
+    defaultValues: async () => profileQuery.data?.bankAccount || {},
   });
   const nextOfKinForm = useForm({
     resolver: zodResolver(nextOfKinSchema),
-    defaultValues: profileQuery.data?.nextOfKin || {},
+    defaultValues: async () => profileQuery.data?.nextOfKin || {},
   });
 
   const identificationForm = useForm({
     resolver: zodResolver(identificationSchema),
-    defaultValues: profileQuery.data?.identification || {},
+    defaultValues: { type: "", key: "" },
   });
 
   // Reset forms when data changes
   useEffect(() => {
-    if (profileQuery.data) personalForm.reset(profileQuery.data);
-  }, [profileQuery.data]);
-  useEffect(() => {
-    if (profileQuery.data?.bankAccount)
-      bankForm.reset(profileQuery.data.bankAccount);
-  }, [profileQuery.data?.bankAccount]);
-  useEffect(() => {
-    if (profileQuery.data?.nextOfKin)
-      nextOfKinForm.reset(profileQuery.data.nextOfKin);
-  }, [profileQuery.data?.nextOfKin]);
+    if (!profileQuery.isLoading && profileQuery.data) {
+      const data = profileQuery.data;
+
+      personalForm.reset(data, { keepDefaultValues: false });
+
+      if (data.bankAccount) {
+        bankForm.reset(data.bankAccount, { keepDefaultValues: false });
+      }
+
+      if (data.nextOfKin) {
+        nextOfKinForm.reset(data.nextOfKin, { keepDefaultValues: false });
+      }
+
+      if (data.identification) {
+        identificationForm.reset(data.identification, {
+          keepDefaultValues: false,
+        });
+      }
+    }
+  }, [profileQuery.isLoading, profileQuery.data]);
 
   // Save handlers
   const handleSave = async (section: string) => {
@@ -164,11 +183,19 @@ export function ProfileSection() {
     };
 
     const selected = formMap[section];
-    if (!selected) return;
+
+    if (!selected) {
+      setUpdatingSections((prev) => ({ ...prev, [section]: false }));
+      return;
+    }
 
     const { form, key, hasImage } = selected;
 
-    if (!(await form.trigger())) return;
+    if (!(await form.trigger())) {
+      setUpdatingSections((prev) => ({ ...prev, [section]: false }));
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 0)); // Wait for next tic
 
     // Get changed values
     const changedValues = getChangedValues(
@@ -176,12 +203,23 @@ export function ProfileSection() {
       form.getValues()
     );
 
+    console.log("=== DETAILED FORM DEBUG ===");
+    console.log("Section:", section);
+    console.log("Raw form values:", form.getValues());
+    console.log("Raw dirty fields:", form.formState.dirtyFields);
+    console.log("Form isDirty:", form.formState.isDirty);
+    console.log("Default values:", form.formState.defaultValues);
+
     if (Object.keys(changedValues).length <= 0) {
       toast.info("No changes made");
+
+      setUpdatingSections((prev) => ({ ...prev, [section]: false }));
       return;
     }
 
-    const payload = key ? { [key]: changedValues } : changedValues;
+    const cleanedValues = cleanPayload(changedValues);
+
+    const payload = key ? { [key]: cleanedValues } : cleanedValues;
 
     updateProfile(payload, hasImage);
     setUpdatingSections((prev) => ({ ...prev, [section]: false }));
@@ -200,13 +238,14 @@ export function ProfileSection() {
       case "nextOfKin":
         nextOfKinForm.reset();
         break;
+      case "identification":
+        identificationForm.reset();
+        break;
     }
     setEditingSection(null);
   };
 
   const handleFileUpload = (file: File) => {
-    console.log("upload file");
-    console.log(file);
     if (file) updateProfile({ avatar: file }, true);
   };
 
@@ -304,443 +343,420 @@ export function ProfileSection() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Profile Overview */}
-        <Card className="bg-card border-border shadow-sm lg:col-span-1">
-          <CardHeader className="text-center">
-            <div className="relative mx-auto">
-              <Avatar className="h-24 w-24 mx-auto">
-                <AvatarImage src={profileOverview.avatar as string} />
-                <AvatarFallback className="text-lg">
-                  {profileOverview.fullName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file);
-                }}
-                className="hidden"
-                id="avatar-upload"
-              />
-              <Button
-                size="icon"
-                variant="secondary"
-                className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                onClick={() =>
-                  document.getElementById("avatar-upload")?.click()
-                }
-                disabled={isUpdating}
-              >
-                {isUpdating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            <CardTitle className="text-card-foreground">
-              {profileOverview.fullName}
-            </CardTitle>
-            <div className="flex items-center justify-center gap-2">
-              <Badge
-                variant="outline"
-                className={getLevelBadgeColor(profileOverview.level)}
-              >
-                Level {profileOverview.level}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="bg-green-100 text-green-800 border-green-200"
-              >
-                {profileOverview.status}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Member since</p>
-              <p className="font-medium text-card-foreground">
-                {formatDate(profileOverview.joinDate)}
-              </p>
-            </div>
-            <Separator />
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Total Earnings
-                </span>
-                <span className="font-medium text-card-foreground">
-                  ${profileOverview.totalEarnings.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Total Recruits
-                </span>
-                <span className="font-medium text-card-foreground">
-                  {profileOverview.totalRecruits.toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {isLoading && <SkeletalForm />}
 
-        {/* Sections */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Personal Information */}
-          <Card className="bg-card border-border shadow-sm">
-            <SectionHeader
-              title="Personal Information"
-              icon={User}
-              sectionKey="personal"
-            />
+      {!isLoading && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Profile Overview */}
+          <Card className="bg-card border-border shadow-sm lg:col-span-1">
+            <CardHeader className="text-center">
+              <div className="relative mx-auto">
+                <Avatar className="h-24 w-24 mx-auto">
+                  <AvatarImage src={profileOverview.avatar as string} />
+                  <AvatarFallback className="text-lg">
+                    {profileOverview.fullName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
+                  onClick={() =>
+                    document.getElementById("avatar-upload")?.click()
+                  }
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <CardTitle className="text-card-foreground">
+                {profileOverview.fullName}
+              </CardTitle>
+              <div className="flex items-center justify-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={getLevelBadgeColor(profileOverview.level)}
+                >
+                  Level {profileOverview.level}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="bg-green-100 text-green-800 border-green-200"
+                >
+                  {profileOverview.status}
+                </Badge>
+              </div>
+            </CardHeader>
             <CardContent className="space-y-4">
-              <Form {...personalForm}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={personalForm.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={!isEditing("personal")} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={personalForm.control}
-                    name="middleName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Middle Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={!isEditing("personal")} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={personalForm.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={!isEditing("personal")} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={personalForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="email"
-                            disabled={!isEditing("personal")}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={personalForm.control}
-                    name="phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={!isEditing("personal")} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={personalForm.control}
-                    name="altPhone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={!isEditing("personal")} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={personalForm.control}
-                    name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Gender</FormLabel>
-
-                        <Select
-                          disabled={!isEditing("personal")}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                profileQuery.data?.gender || "Select your bank"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="male">Male</SelectItem>
-                            <SelectItem value="female">Female</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                            <SelectItem value="prefer-not-to-say">
-                              Prefer not to say
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={personalForm.control}
-                    name="dateOfBirth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date Of Birth</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value?.toString() ?? ""}
-                            disabled={!isEditing("personal")}
-                            type="date"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Member since
+                </p>
+                <p className="font-medium text-card-foreground">
+                  {formatDate(profileOverview.joinDate)}
+                </p>
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Total Earnings
+                  </span>
+                  <span className="font-medium text-card-foreground">
+                    ${profileOverview.totalEarnings.toLocaleString()}
+                  </span>
                 </div>
-
-                <FormField
-                  control={personalForm.control}
-                  name="nationality"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nationality</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          rows={2}
-                          disabled={!isEditing("personal")}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={personalForm.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          rows={2}
-                          disabled={!isEditing("personal")}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </Form>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Total Recruits
+                  </span>
+                  <span className="font-medium text-card-foreground">
+                    {profileOverview.totalRecruits.toLocaleString()}
+                  </span>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Identification Details Card */}
-          <Card className="bg-card border-border shadow-sm">
-            <SectionHeader
-              title="Identification Details"
-              icon={FileText}
-              sectionKey="identification"
-              extra={profileQuery.data?.status === "active" && BadgeCheck}
-            />
+          {/* Sections */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information */}
+            <Card className="bg-card border-border shadow-sm">
+              <SectionHeader
+                title="Personal Information"
+                icon={User}
+                sectionKey="personal"
+              />
+              <CardContent className="space-y-4">
+                <Form {...personalForm}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={personalForm.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing("personal")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-            <CardContent className="space-y-4">
-              <Form {...identificationForm}>
-                <div className="space-y-2">
+                    <FormField
+                      control={personalForm.control}
+                      name="middleName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Middle Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing("personal")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={personalForm.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing("personal")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={personalForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="email"
+                              disabled={!isEditing("personal")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={personalForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing("personal")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={personalForm.control}
+                      name="altPhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing("personal")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={personalForm.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gender</FormLabel>
+
+                          <Select
+                            disabled={!isEditing("personal")}
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  profileQuery.data?.gender ||
+                                  "Select your bank"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="prefer-not-to-say">
+                                Prefer not to say
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={personalForm.control}
+                      name="dateOfBirth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date Of Birth</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value?.toString() ?? ""}
+                              disabled={!isEditing("personal")}
+                              type="date"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
-                    control={identificationForm.control}
-                    name="type"
+                    control={personalForm.control}
+                    name="nationality"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>ID Type</FormLabel>
-
-                        <Select
-                          disabled={!isEditing("identification")}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select ID type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="nin">NIN</SelectItem>
-                            <SelectItem value="voters-id">
-                              Voter's ID Card
-                            </SelectItem>
-                            <SelectItem value="passport">Passport</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Nationality</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            rows={2}
+                            disabled={!isEditing("personal")}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
                   <FormField
-                    control={identificationForm.control}
-                    name="key"
+                    control={personalForm.control}
+                    name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>ID Upload</FormLabel>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            rows={2}
+                            disabled={!isEditing("personal")}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </Form>
+              </CardContent>
+            </Card>
 
-                        <div
-                          className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer"
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            if (!isEditing("identification")) return;
+            {/* Identification Details Card */}
+            <Card className="bg-card border-border shadow-sm">
+              <SectionHeader
+                title="Identification Details"
+                icon={FileText}
+                sectionKey="identification"
+                extra={profileQuery.data?.status === "active" && BadgeCheck}
+              />
 
-                            const file = e.dataTransfer.files?.[0];
-                            if (file) field.onChange(file);
-                          }}
-                          onClick={() => {
-                            if (!isEditing("identification")) return;
-                            document.getElementById("file-input")?.click();
-                          }}
-                        >
-                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground mb-2">
-                            Click to upload or drag and drop
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            PNG, JPG, PDF up to 10MB
-                          </p>
-                          <Button
-                            variant="outline"
-                            className="mt-2 bg-transparent"
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              document.getElementById("file-input")?.click();
-                            }}
+              <CardContent className="space-y-4">
+                <Form {...identificationForm}>
+                  <div className="space-y-2">
+                    <FormField
+                      control={identificationForm.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Type</FormLabel>
+
+                          <Select
                             disabled={!isEditing("identification")}
+                            onValueChange={field.onChange}
+                            value={field.value}
                           >
-                            Choose File
-                          </Button>
-                          <input
-                            id="file-input"
-                            type="file"
-                            className="hidden"
-                            accept=".png,.jpg,.jpeg,.pdf"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select ID type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="nin">NIN</SelectItem>
+                              <SelectItem value="voters-id">
+                                Voter's ID Card
+                              </SelectItem>
+                              <SelectItem value="passport">Passport</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={identificationForm.control}
+                      name="key"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Upload</FormLabel>
+
+                          <div
+                            className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer"
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              if (!isEditing("identification")) return;
+
+                              const file = e.dataTransfer.files?.[0];
                               if (file) field.onChange(file);
                             }}
-                          />
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Bank Details */}
-          <Card className="bg-card border-border shadow-sm">
-            <SectionHeader
-              title="Bank Details"
-              icon={CreditCard}
-              sectionKey="bank"
-            />
-            <CardContent className="space-y-4">
-              <Form {...bankForm}>
-                <FormField
-                  control={bankForm.control}
-                  name="bvn"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>BVN</FormLabel>
-                      <FormControl>
-                        <Input {...field} disabled={!isEditing("bank")} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={bankForm.control}
-                    name="bankName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bank Name</FormLabel>
-                        <Select
-                          disabled={!isEditing("bank")}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                profileQuery.data?.bankAccount?.bankName ||
-                                "Select your bank"
-                              }
+                            onClick={() => {
+                              if (!isEditing("identification")) return;
+                              document.getElementById("file-input")?.click();
+                            }}
+                          >
+                            <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Click to upload or drag and drop
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              PNG, JPG, PDF up to 10MB
+                            </p>
+                            <Button
+                              variant="outline"
+                              className="mt-2 bg-transparent"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                document.getElementById("file-input")?.click();
+                              }}
+                              disabled={!isEditing("identification")}
+                            >
+                              Choose File
+                            </Button>
+                            <input
+                              id="file-input"
+                              type="file"
+                              className="hidden"
+                              accept=".png,.jpg,.jpeg,.pdf"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) field.onChange(file);
+                              }}
                             />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nigerianBanks.map((bank) => (
-                              <SelectItem key={bank} value={bank}>
-                                {bank}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </Form>
+              </CardContent>
+              <CardFooter></CardFooter>
+            </Card>
+
+            {/* Bank Details */}
+            <Card className="bg-card border-border shadow-sm">
+              <SectionHeader
+                title="Bank Details"
+                icon={CreditCard}
+                sectionKey="bank"
+              />
+              <CardContent className="space-y-4">
+                <Form {...bankForm}>
                   <FormField
                     control={bankForm.control}
-                    name="accountNumber"
+                    name="bvn"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Account Number</FormLabel>
+                        <FormLabel>BVN</FormLabel>
                         <FormControl>
                           <Input {...field} disabled={!isEditing("bank")} />
                         </FormControl>
@@ -748,94 +764,174 @@ export function ProfileSection() {
                       </FormItem>
                     )}
                   />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={bankForm.control}
+                      name="bankName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bank Name</FormLabel>
+                          <Select
+                            disabled={!isEditing("bank")}
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  profileQuery.data?.bankAccount?.bankName ||
+                                  "Select your bank"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {nigerianBanks.map((bank) => (
+                                <SelectItem key={bank} value={bank}>
+                                  {bank}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={bankForm.control}
+                      name="accountNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Account Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} disabled={!isEditing("bank")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={bankForm.control}
-                    name="accountName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Account Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} disabled={!isEditing("bank")} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </Form>
-            </CardContent>
-          </Card>
+                    <FormField
+                      control={bankForm.control}
+                      name="accountName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Account Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} disabled={!isEditing("bank")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </Form>
+              </CardContent>
+            </Card>
 
-          {/* Next of Kin */}
-          <Card className="bg-card border-border shadow-sm">
-            <SectionHeader
-              title="Next of Kin"
-              icon={Users}
-              sectionKey="nextOfKin"
-            />
-            <CardContent className="space-y-4">
-              <Form {...nextOfKinForm}>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FormField
-                    control={nextOfKinForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            disabled={!isEditing("nextOfKin")}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={nextOfKinForm.control}
-                    name="relationship"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Relationship</FormLabel>
-                        <Select
-                          disabled={!isEditing("nextOfKin")}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                profileQuery.data?.nextOfKin?.relationship ||
-                                "Select Relationship"
-                              }
+            {/* Next of Kin */}
+            <Card className="bg-card border-border shadow-sm">
+              <SectionHeader
+                title="Next of Kin"
+                icon={Users}
+                sectionKey="nextOfKin"
+              />
+              <CardContent className="space-y-4">
+                <Form {...nextOfKinForm}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FormField
+                      control={nextOfKinForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing("nextOfKin")}
                             />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {relationshipOptions.map((rel) => (
-                              <SelectItem
-                                key={rel}
-                                value={rel.toLowerCase().replace(/\s+/g, "-")}
-                              >
-                                {rel}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={nextOfKinForm.control}
+                      name="relationship"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Relationship</FormLabel>
+                          <Select
+                            disabled={!isEditing("nextOfKin")}
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  profileQuery.data?.nextOfKin?.relationship ||
+                                  "Select Relationship"
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {relationshipOptions.map((rel) => (
+                                <SelectItem
+                                  key={rel}
+                                  value={rel.toLowerCase().replace(/\s+/g, "-")}
+                                >
+                                  {rel}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={nextOfKinForm.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone Number</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled={!isEditing("nextOfKin")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={nextOfKinForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="email"
+                              disabled={!isEditing("nextOfKin")}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={nextOfKinForm.control}
-                    name="phone"
+                    name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>Address</FormLabel>
                         <FormControl>
-                          <Input
+                          <Textarea
                             {...field}
+                            rows={2}
                             disabled={!isEditing("nextOfKin")}
                           />
                         </FormControl>
@@ -843,46 +939,49 @@ export function ProfileSection() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={nextOfKinForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="email"
-                            disabled={!isEditing("nextOfKin")}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                </Form>
+              </CardContent>
+              {/* <CardFooter>
+              
+              {isEditing("nextOfKin") && (
+                <div className="mt-4 p-4 bg-gray-100 rounded">
+                  <h4>NEXTOFKIN DEBUG:</h4>
+                  <p>
+                    Form values: {JSON.stringify(nextOfKinForm.getValues())}
+                  </p>
+                  <p>
+                    Dirty fields:{" "}
+                    {JSON.stringify(nextOfKinForm.formState.dirtyFields)}
+                  </p>
+                  <p>
+                    Is dirty: {JSON.stringify(nextOfKinForm.formState.isDirty)}
+                  </p>
+
+                  <Button
+                    onClick={() => {
+                      console.log("=== NEXTOFKIN DEBUG ===");
+                      console.log("Values:", nextOfKinForm.getValues());
+                      console.log(
+                        "Dirty fields:",
+                        nextOfKinForm.formState.dirtyFields
+                      );
+                      console.log("Is dirty:", nextOfKinForm.formState.isDirty);
+                      console.log(
+                        "Default values:",
+                        nextOfKinForm.formState.defaultValues
+                      );
+                    }}
+                    className="mt-2"
+                  >
+                    Debug NextOfKin
+                  </Button>
                 </div>
-                <FormField
-                  control={nextOfKinForm.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Address</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          rows={2}
-                          disabled={!isEditing("nextOfKin")}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </Form>
-            </CardContent>
-          </Card>
+              )}
+            </CardFooter> */}
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

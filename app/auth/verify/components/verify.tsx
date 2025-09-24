@@ -27,11 +27,11 @@ export default function EmailVerifiedPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
-  console.log(token);
+  
 
   useEffect(() => {
     if (!token) {
-      console.log(token);
+      
       return;
     }
     let timer: NodeJS.Timeout;

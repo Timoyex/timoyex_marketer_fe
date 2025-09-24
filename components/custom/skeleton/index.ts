@@ -4,3 +4,4 @@ export { default as SkeletalProgress } from "./Progress";
 export { default as SkeletalChartCard } from "./ChartCard";
 export { default as SkeletalCardView } from "./CardView";
 export { default as SkeletalTable } from "./Table";
+export { default as SkeletalForm } from "./Form";
