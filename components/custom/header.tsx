@@ -21,10 +21,13 @@ import SkeletalHeaderDropDown from "./skeleton/Dropdoown";
 import { useNotificationStore } from "@/lib/stores/notifications.store";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useNotifications } from "@/hooks/notifications.hook";
+import { useRouter } from "next/navigation";
 
 export function Header() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { profileQuery, isLoading, getError } = useProfile();
+
+  const router = useRouter();
 
   const profile = profileQuery.data;
 
@@ -48,6 +51,11 @@ export function Header() {
   const handleMarkAll = () => {
     markAllAsRead();
     allRead();
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
   };
 
   return (
@@ -174,7 +182,7 @@ export function Header() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
+                <DropdownMenuItem onClick={handleLogout}>
                   <Link
                     href="/login"
                     className="flex flex-row justify-center items-center"

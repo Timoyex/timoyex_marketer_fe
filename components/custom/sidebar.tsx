@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores";
 import { useAuth } from "@/hooks";
@@ -46,11 +46,17 @@ export function Sidebar() {
   const profile = profileQuery.data;
 
   const { logout } = useAuth();
+  const router = useRouter();
 
   const pathname = usePathname();
 
   const closeMobileSidebar = () => {
     setSidebarOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
   };
 
   return (
@@ -214,7 +220,7 @@ export function Sidebar() {
                 )}
                 asChild
               >
-                <Link href="/login" onClick={logout}>
+                <Link href="/login" onClick={handleLogout}>
                   <LogOut className="h-5 w-5 flex-shrink-0" />
                   {!sidebarCollapsed && <span>Logout</span>}
                 </Link>
@@ -224,7 +230,7 @@ export function Sidebar() {
               {sidebarCollapsed && (
                 <div
                   className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50"
-                  onClick={logout}
+                  onClick={handleLogout}
                 >
                   Logout
                   <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-gray-900"></div>
@@ -325,7 +331,7 @@ export function Sidebar() {
                   asChild
                   onClick={closeMobileSidebar}
                 >
-                  <Link href="/login">
+                  <Link href="/login" onClick={handleLogout}>
                     <LogOut className="h-5 w-5" />
                     Logout
                   </Link>
