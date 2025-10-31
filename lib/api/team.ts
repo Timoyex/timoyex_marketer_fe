@@ -30,6 +30,12 @@ export interface TeamStats {
   indirectCommissions: number;
   currentMonthEarnings: number;
   teamVolume: number;
+  directMembersDist: Array<{
+    month: string;
+    monthYear: string;
+    users: number;
+    date: string;
+  }>;
 }
 
 export interface TeamResponse extends EndpointResponse {

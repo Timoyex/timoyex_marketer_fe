@@ -48,6 +48,7 @@ export interface UserProfile {
   totalEarnings: number;
   totalRecruits: number;
   status: string;
+  level?: number;
 }
 
 interface ProfileState {

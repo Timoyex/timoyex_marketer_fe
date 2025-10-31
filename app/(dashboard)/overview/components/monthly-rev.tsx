@@ -20,7 +20,6 @@ const MonthlyRevenueChart = ({
 }) => {
   return (
     <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 overflow-hidden relative">
-      <Demo />
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-card-foreground text-sm sm:text-base">
           <div className="p-1.5 bg-purple-100 rounded-lg">
@@ -78,7 +77,7 @@ const MonthlyRevenueChart = ({
                 />
                 <Area
                   type="monotone"
-                  dataKey="revenue"
+                  dataKey="amount"
                   stroke="var(--chart-1)"
                   fillOpacity={1}
                   fill="url(#fillRevenue)"

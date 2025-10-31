@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { Bell, User, Settings, Menu, ChevronDown, LogOut } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,16 +14,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
-import Link from "next/link";
 import { useUIStore } from "@/lib/stores";
 import { useAuth } from "@/hooks";
 import { useProfile } from "@/hooks/profile.hook";
 import SkeletalHeaderDropDown from "./skeleton/Dropdoown";
+import { useNotificationStore } from "@/lib/stores/notifications.store";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
+import { useNotifications } from "@/hooks/notifications.hook";
 
 export function Header() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { profileQuery, isLoading, getError } = useProfile();
+
   const profile = profileQuery.data;
 
   const {
@@ -29,32 +34,21 @@ export function Header() {
 
   const { logout } = useAuth();
 
-  const notifications = [
-    {
-      id: 1,
-      message: "John Doe joined your team",
-      time: "2 hours ago",
-      unread: true,
-    },
-    {
-      id: 2,
-      message: "Commission payout processed",
-      time: "1 day ago",
-      unread: true,
-    },
-    {
-      id: 3,
-      message: "New announcement posted",
-      time: "2 days ago",
-      unread: false,
-    },
-    {
-      id: 4,
-      message: "Level 3 achievement unlocked",
-      time: "3 days ago",
-      unread: false,
-    },
-  ];
+  const { notifications, markAllAsRead, markAsRead, unreadCount } =
+    useNotificationStore();
+
+  const { markAllAsRead: allRead, markAsRead: read } = useNotifications();
+
+  // handle click (mark as read)
+  const handleClick = (id: string) => {
+    markAsRead(id);
+    read(id);
+  };
+
+  const handleMarkAll = () => {
+    markAllAsRead();
+    allRead();
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -77,61 +71,72 @@ export function Header() {
 
         <div className="flex items-center gap-2 sm:gap-4">
           {/* Notifications */}
-          <DropdownMenu
-            open={notificationsOpen}
-            onOpenChange={setNotificationsOpen}
-          >
-            <DropdownMenuTrigger asChild>
+
+          <Popover>
+            <PopoverTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
                 className="relative h-8 w-8 sm:h-10 sm:w-10"
               >
                 <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 rounded-full p-0 text-xs"
-                >
-                  {notifications.filter((n) => n.unread).length}
-                </Badge>
+                {unreadCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 rounded-full p-0 text-xs"
+                  >
+                    {unreadCount}
+                  </Badge>
+                )}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
+            </PopoverTrigger>
+
+            <PopoverContent
               align="end"
               className="w-72 sm:w-80 max-w-[calc(100vw-2rem)]"
             >
-              <div className="p-3 border-b">
-                <h3 className="font-semibold">Notifications</h3>
+              <div className="flex items-center justify-between border-b pb-2 mb-2">
+                <span className="font-semibold text-sm">Notifications</span>
+                {notifications.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={handleMarkAll}>
+                    Mark all as read
+                  </Button>
+                )}
               </div>
-              <div className="max-h-64 overflow-y-auto">
-                {notifications.map((notification) => (
-                  <DropdownMenuItem
-                    key={notification.id}
-                    className="flex flex-col items-start p-3 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2 w-full">
-                      {notification.unread && (
-                        <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
-                      )}
-                      <span
-                        className={`text-sm ${
-                          notification.unread
-                            ? "font-medium"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {notification.message}
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      {notification.time}
-                    </span>
-                  </DropdownMenuItem>
-                ))}
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
+              {notifications.length === 0 ? (
+                <div className="text-sm text-muted-foreground px-2 py-4 text-center">
+                  No notifications
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <AnimatePresence initial={false}>
+                    {notifications.map((n) => {
+                      return (
+                        <motion.div
+                          key={n.id}
+                          className={`rounded-md border p-2 hover:bg-accent cursor-pointer`}
+                          onClick={() => handleClick(n.id)}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          layout
+                        >
+                          <div className="flex flex-row gap-4 items-center">
+                            <div className="font-medium">{n.title}</div>
+                          </div>
+                          {n.message && (
+                            <div className="text-sm text-muted-foreground">
+                              {n.message}
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
           {/* User Menu */}
 
           {isLoading ? (
@@ -170,8 +175,13 @@ export function Header() {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  <Link
+                    href="/login"
+                    className="flex flex-row justify-center items-center"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

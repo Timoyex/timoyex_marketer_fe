@@ -25,7 +25,7 @@ export function VerifyGuard({
       requireVerified &&
       !user?.isVerified
     ) {
-      router.push("/auth/verify-rmail");
+      router.push("/verify-rmail");
     }
 
     if (!requireAuth && isAuthenticated) {

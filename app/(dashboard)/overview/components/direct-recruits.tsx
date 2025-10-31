@@ -20,7 +20,6 @@ const DirectRecruitsChart = ({
 }) => {
   return (
     <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 overflow-hidden relative">
-      <Demo />
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-card-foreground text-sm sm:text-base">
           <div className="p-1.5 bg-green-100 rounded-lg">
@@ -72,7 +71,7 @@ const DirectRecruitsChart = ({
                   tick={{ fill: "var(--muted-foreground)" }}
                 />
                 <Bar
-                  dataKey="recruits"
+                  dataKey="users"
                   fill="url(#barGradient)"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={40}

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -11,27 +10,79 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  UserPlus,
-  Network,
-  DollarSign,
-  TrendingUp,
-  List,
-  LayoutGrid,
-  Share,
-} from "lucide-react";
+import { UserPlus, Network, Share } from "lucide-react";
 import { InfoCard } from "@/components/custom/infocard";
 import { copyToClipboard } from "@/lib/utils";
-import TeamCardView from "./cardView";
-import TeamTableView from "./tableView";
 import { useProfile } from "@/hooks/profile.hook";
 import { useTeam } from "@/hooks/team.hook";
 import { SkeletalInfoCard } from "@/components/custom/skeleton";
+import { EmptyState, teamColumns } from "./columns";
+import { DataTable } from "@/components/custom/dataTable";
 
-const ITEMS_PER_PAGE = 10;
+const statusOptions = [
+  { value: "all", label: "All Status" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "pending", label: "Pending" },
+];
+const levelOptions = [
+  { value: "all", label: "All Levels" },
+  { value: "1", label: "Level 1" },
+  { value: "2", label: "Level 2" },
+  { value: "3", label: "Level 3" },
+  { value: "4", label: "Level 4" },
+  { value: "5", label: "Level 5" },
+  { value: "6", label: "Level 6" },
+  { value: "7", label: "Level 7" },
+  { value: "8", label: "Level 8" },
+  { value: "9", label: "Level 9" },
+  { value: "10", label: "Level 10" },
+];
+
+export function FilterSlots({ table }: { table: any }) {
+  const statusValue =
+    (table.getColumn("status")?.getFilterValue() as string) ?? "";
+  const levelValue =
+    (table.getColumn("level")?.getFilterValue() as string) ?? "";
+
+  return (
+    <>
+      <Select
+        value={statusValue}
+        onValueChange={(val) => table.getColumn("status")?.setFilterValue(val)}
+        placeholder="Filter by Status"
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by Status" />
+        </SelectTrigger>
+        <SelectContent>
+          {statusOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={levelValue}
+        onValueChange={(val) => table.getColumn("level")?.setFilterValue(val)}
+        placeholder="Filter by Level"
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by Level" />
+        </SelectTrigger>
+        <SelectContent>
+          {levelOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
+  );
+}
 
 export function TeamSection() {
   const { profileQuery, isLoading } = useProfile();
@@ -42,42 +93,12 @@ export function TeamSection() {
     downlineIsLoading,
   } = useTeam(profileQuery.data?.marketerCode || ""); //tanstack query
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [levelFilter, setLevelFilter] = useState("all");
-  const [viewMode, setViewMode] = useState<"table" | "card">("table");
-
   const handleInviteMember = async () => {
     const referralLink = `https://yourplatform.com/join/${profileQuery.data?.marketerCode}`;
     await copyToClipboard(referralLink);
   };
 
-  const filteredMembers =
-    useMemo(() => {
-      const teamMembers = downlineMembers?.members;
-      return teamMembers?.filter((member) => {
-        const matchesSearch =
-          member.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          member.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          member.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus =
-          statusFilter === "all" ||
-          member.status.toLowerCase() === statusFilter.toLowerCase();
-        const matchesLevel =
-          levelFilter === "all" || member.level?.toString() === levelFilter;
-
-        return matchesSearch && matchesStatus && matchesLevel;
-      });
-    }, [searchTerm, statusFilter, levelFilter, downlineIsLoading]) || [];
-
-  const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  console.log(filteredMembers);
-  const paginatedMembers = filteredMembers.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
+  // Filter data before passing to DataTable
 
   const teamStats = [
     {
@@ -91,20 +112,6 @@ export function TeamSection() {
       icon: <Network className="h-5 w-5 text-green-500" />,
       value: memberStats?.totalDownlines || 0,
       desc: "Including sub-levels",
-    },
-    {
-      title: "Total Revenue",
-      icon: <TrendingUp className="h-5 w-5 text-purple-500" />,
-      value: `₦${memberStats?.totalEarnings?.toLocaleString() || 0}`,
-      desc: "All-time revenue",
-      isDemo: true,
-    },
-    {
-      title: "Team Earnings",
-      icon: <DollarSign className="h-5 w-5 text-orange-500" />,
-      value: `₦${memberStats?.totalEarnings?.toLocaleString() || 0}`,
-      desc: "Total team commissions",
-      isDemo: true,
     },
   ];
 
@@ -127,9 +134,9 @@ export function TeamSection() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2">
         {teamStatsIsLoading &&
-          Array(4)
+          Array(2)
             .fill(0)
             .map((item, index) => <SkeletalInfoCard key={index} />)}
         {!teamStatsIsLoading &&
@@ -141,7 +148,6 @@ export function TeamSection() {
               value={stat.value}
               icon={stat.icon}
               iconBg="bg-transparent"
-              isDemo={stat.isDemo || false}
             />
           ))}
       </div>
@@ -151,135 +157,28 @@ export function TeamSection() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-card-foreground">Team Members</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={viewMode === "table" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-                className="flex items-center gap-2"
-              >
-                <List className="h-4 w-4" />
-                Table View
-              </Button>
-              <Button
-                variant={viewMode === "card" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setViewMode("card")}
-                className="flex items-center gap-2"
-              >
-                <LayoutGrid className="h-4 w-4" />
-                Card View
-              </Button>
-            </div>
+            <div className="flex items-center gap-2"></div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="pl-10"
-              />
-            </div>
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={levelFilter}
-              onValueChange={(value) => {
-                setLevelFilter(value);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="1">Level 1</SelectItem>
-                <SelectItem value="2">Level 2</SelectItem>
-                <SelectItem value="3">Level 3</SelectItem>
-                <SelectItem value="4">Level 4</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Table */}
-          {viewMode === "table" ? (
-            <div className="overflow-x-auto">
-              <div className="rounded-md border border-border min-w-[600px]">
-                <TeamTableView data={paginatedMembers} />
-              </div>
-            </div>
-          ) : (
-            <TeamCardView data={paginatedMembers} />
+          {downlineIsLoading && (
+            <DataTable
+              data={[]}
+              columns={teamColumns}
+              emptyState={<EmptyState />}
+            />
           )}
-
-          {/* Pagination */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-            <div className="text-sm text-muted-foreground order-2 sm:order-1">
-              Showing {startIndex + 1} to{" "}
-              {Math.min(startIndex + ITEMS_PER_PAGE, filteredMembers.length)} of{" "}
-              {filteredMembers.length} results
-            </div>
-            <div className="flex items-center gap-2 order-1 sm:order-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum = i + 1;
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          {!downlineIsLoading && (
+            <DataTable
+              data={downlineMembers?.members || []}
+              columns={teamColumns}
+              searchPlaceholder="Search by name"
+              searchTerm="name"
+              emptyState={<EmptyState />}
+              filterSlot={({ table }) => <FilterSlots table={table} />}
+              globalSearchColumns={["name", "status", "level"]}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

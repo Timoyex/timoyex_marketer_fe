@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,230 +10,299 @@ import {
   Bell,
   Calendar,
   User,
-  TrendingUp,
-  Gift,
   AlertCircle,
-  Clock,
-  Star,
   Award,
   DollarSign,
-  ChevronLeft,
-  ChevronRight,
+  Check,
 } from "lucide-react";
 import { InfoCard } from "@/components/custom/infocard";
-import Demo from "@/components/custom/demo";
+import { formatDate } from "@/lib/utils";
+import { PaginatedTable } from "@/components/custom/dataTable";
+import { useNotifications } from "@/hooks/notifications.hook";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-// Sample announcements data
-const generalAnnouncements = [
-  {
-    id: 1,
-    title: "New Commission Structure Launched",
-    content:
-      "We're excited to announce our enhanced commission structure with higher rates for top performers. Level 4 and 5 affiliates now earn up to 15% more on team commissions.",
-    type: "update",
-    priority: "high",
-    date: "2024-03-20",
-    author: "Admin Team",
-    isRead: false,
-  },
-  {
-    id: 2,
-    title: "Q1 Performance Bonuses Available",
-    content:
-      "Congratulations to all affiliates who exceeded their Q1 targets! Bonus payments will be processed with your next regular payout. Check your earnings section for details.",
-    type: "bonus",
-    priority: "medium",
-    date: "2024-03-18",
-    author: "Finance Team",
-    isRead: true,
-  },
-  {
-    id: 3,
-    title: "System Maintenance Scheduled",
-    content:
-      "Our platform will undergo scheduled maintenance on March 25th from 2:00 AM to 4:00 AM EST. During this time, the dashboard may be temporarily unavailable.",
-    type: "maintenance",
-    priority: "medium",
-    date: "2024-03-15",
-    author: "Tech Team",
-    isRead: true,
-  },
-  {
-    id: 4,
-    title: "New Training Materials Available",
-    content:
-      "We've added comprehensive training modules covering advanced sales techniques and team building strategies. Access them through your learning portal.",
-    type: "training",
-    priority: "low",
-    date: "2024-03-12",
-    author: "Training Team",
-    isRead: true,
-  },
-];
+type NotificationType =
+  | "payment"
+  | "team"
+  | "achievement"
+  | "action"
+  | "commission"
+  | "bonus"
+  | "maintenance";
 
-const personalNotifications = [
-  {
-    id: 1,
-    title: "Congratulations! Level 4 Achieved",
-    content:
-      "You've successfully reached Level 4 with 89 direct recruits. Your new commission rate is now active and will apply to all future earnings.",
-    type: "achievement",
-    date: "2024-03-19",
-    isRead: false,
-  },
-  {
-    id: 2,
-    title: "Payment Processed Successfully",
-    content:
-      "Your commission payment of $6,720 has been processed and will arrive in your account within 2-3 business days.",
-    type: "payment",
-    date: "2024-03-15",
-    isRead: false,
-  },
-  {
-    id: 3,
-    title: "New Team Member Joined",
-    content:
-      "Sarah Johnson has joined your team as a direct recruit. Welcome them and help them get started with their affiliate journey.",
-    type: "team",
-    date: "2024-03-14",
-    isRead: true,
-  },
-  {
-    id: 4,
-    title: "Monthly Target Reminder",
-    content:
-      "You're 85% towards your monthly recruitment target. Just 3 more recruits needed to unlock your bonus for March!",
-    type: "reminder",
-    date: "2024-03-10",
-    isRead: true,
-  },
-  {
-    id: 5,
-    title: "Profile Update Required",
-    content:
-      "Please update your tax information in your profile settings to ensure uninterrupted payment processing.",
-    type: "action",
-    date: "2024-03-08",
-    isRead: true,
-  },
-];
+const getNotificationIcon = (type: NotificationType | unknown) => {
+  switch (type) {
+    case "achievement":
+      return <Award className="h-5 w-5 text-purple-600" />;
+    case "payment":
+      return <DollarSign className="h-5 w-5 text-green-600" />;
+    case "team":
+      return <User className="h-5 w-5 text-blue-600" />;
+    case "action":
+      return <AlertCircle className="h-5 w-5 text-orange-600" />;
+    default:
+      return <Bell className="h-5 w-5 text-gray-600" />;
+  }
+};
+
+const getPriorityColor = (
+  priority: "high" | "low" | "medium" | "urgent" | unknown
+) => {
+  switch (priority) {
+    case "urgent":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "high":
+      return "bg-orange-100 text-orange-800 border-orange-200";
+    case "medium":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "low":
+      return "bg-green-100 text-green-800 border-green-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const getTypeColor = (type: "payment" | "team" | "achievement" | "action") => {
+  switch (type) {
+    case "achievement":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    case "payment":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "team":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "action":
+      return "bg-orange-100 text-orange-800 border-orange-200";
+
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const EmptyState = () => (
+  <div className="flex flex-col items-center justify-center py-16 px-4">
+    <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
+      <Megaphone className="h-12 w-12 text-muted-foreground" />
+    </div>
+    <h3 className="text-lg font-semibold mb-2">No notifications yet.</h3>
+    <p className="text-muted-foreground text-center max-w-md">
+      You're all caught up! Check back later for new announcements and updates.
+    </p>
+  </div>
+);
 
 export function AnnouncementsSection() {
   const [activeTab, setActiveTab] = useState("announcements");
-  const [announcementsPage, setAnnouncementsPage] = useState(1);
-  const [notificationsPage, setNotificationsPage] = useState(1);
-  const itemsPerPage = 3;
+  const [infoCursor, setInfoCursor] = useState<string | undefined>(undefined);
+  const [generalCursor, setGeneralCursor] = useState<string | undefined>(
+    undefined
+  );
+  const [infoCursorHistory, setInfoCursorHistory] = useState<
+    (string | undefined)[]
+  >([]);
+  const [generalCursorHistory, setGeneralCursorHistory] = useState<
+    (string | undefined)[]
+  >([]);
 
-  const totalAnnouncementPages = Math.ceil(
-    generalAnnouncements.length / itemsPerPage
-  );
-  const startAnnouncementIndex = (announcementsPage - 1) * itemsPerPage;
-  const paginatedAnnouncements = generalAnnouncements.slice(
-    startAnnouncementIndex,
-    startAnnouncementIndex + itemsPerPage
+  const { markAsRead, markTypeAsRead } = useNotifications();
+  const { notificationsTypeQuery: infoQuery, isTypeLoading: infoLoading } =
+    useNotifications(
+      {
+        limit: 3,
+        cursor: infoCursor,
+      },
+      "info"
+    );
+
+  const {
+    notificationsTypeQuery: generalQuery,
+    isTypeLoading: generalLoading,
+  } = useNotifications(
+    {
+      limit: 3,
+      cursor: generalCursor,
+    },
+    "general"
   );
 
-  const totalNotificationPages = Math.ceil(
-    personalNotifications.length / itemsPerPage
-  );
-  const startNotificationIndex = (notificationsPage - 1) * itemsPerPage;
-  const paginatedNotifications = personalNotifications.slice(
-    startNotificationIndex,
-    startNotificationIndex + itemsPerPage
-  );
+  // Navigation handlers
+  const handleNextPage = (
+    data: Record<string, any>,
+    type: "info" | "general"
+  ) => {
+    if (data?.nextCursor) {
+      switch (type) {
+        case "info":
+          setInfoCursorHistory((prev) => [...prev, infoCursor]);
+          setInfoCursor(data.nextCursor);
+          break;
+        case "general":
+          setGeneralCursorHistory((prev) => [...prev, generalCursor]);
+          setGeneralCursor(data.nextCursor);
+          break;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+        default:
+          break;
+      }
+    }
   };
 
-  const getAnnouncementIcon = (type: string) => {
+  const handlePreviousPage = (
+    data: Record<string, any>,
+    type: "info" | "general"
+  ) => {
+    if (data?.prevCursor) {
+      // Go back to previous cursor
+
+      switch (type) {
+        case "info":
+          let previousCursor = infoCursorHistory[infoCursorHistory.length - 1];
+          setInfoCursorHistory((prev) => prev.slice(0, -1));
+          setInfoCursor(previousCursor);
+          break;
+        case "general":
+          previousCursor =
+            generalCursorHistory[generalCursorHistory.length - 1];
+          setGeneralCursorHistory((prev) => prev.slice(0, -1));
+          setGeneralCursor(previousCursor);
+          break;
+
+        default:
+          break;
+      }
+    }
+  };
+
+  const handleFirstPage = (type: "info" | "general") => {
     switch (type) {
-      case "update":
-        return <TrendingUp className="h-5 w-5 text-blue-600" />;
-      case "bonus":
-        return <Gift className="h-5 w-5 text-green-600" />;
-      case "maintenance":
-        return <AlertCircle className="h-5 w-5 text-orange-600" />;
-      case "training":
-        return <Star className="h-5 w-5 text-purple-600" />;
+      case "info":
+        setInfoCursor(undefined);
+        setInfoCursorHistory([]);
+        break;
+      case "general":
+        setGeneralCursor(undefined);
+        setGeneralCursorHistory([]);
+        break;
+
       default:
-        return <Megaphone className="h-5 w-5 text-blue-600" />;
+        break;
     }
   };
 
-  const getNotificationIcon = (type: string) => {
+  // Determine button states
+  const canGoNext = (data: Record<string, any>) =>
+    Boolean(data?.hasMore && data?.nextCursor);
+  const canGoPrevious = (data: Record<string, any>) =>
+    Boolean(data?.prevCursor);
+  const isFirstPage = (type: "info" | "general") => {
     switch (type) {
-      case "achievement":
-        return <Award className="h-5 w-5 text-purple-600" />;
-      case "payment":
-        return <DollarSign className="h-5 w-5 text-green-600" />;
-      case "team":
-        return <User className="h-5 w-5 text-blue-600" />;
-      case "reminder":
-        return <Clock className="h-5 w-5 text-orange-600" />;
-      case "action":
-        return <AlertCircle className="h-5 w-5 text-orange-600" />;
+      case "info":
+        return infoCursor === undefined;
+
+      case "general":
+        return generalCursor === undefined;
       default:
-        return <Bell className="h-5 w-5 text-blue-600" />;
+        break;
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low":
-        return "bg-green-100 text-green-800 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "achievement":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "payment":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "team":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "reminder":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      case "action":
-        return "bg-red-100 text-red-800 border-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
-  const unreadAnnouncements = generalAnnouncements.filter(
-    (a) => !a.isRead
-  ).length;
-  const unreadNotifications = personalNotifications.filter(
-    (n) => !n.isRead
-  ).length;
+  const unreadAnnouncements = generalQuery.data?.unreadCount || 0;
+  const unreadNotifications = infoQuery.data?.unreadCount || 0;
 
   const notificationStats = [
     {
       title: "Unread Announcements",
       icon: <Megaphone className="h-4 w-4 text-blue-600" />,
-      value: unreadAnnouncements,
+      value: generalQuery.data?.unreadCount || 0,
       desc: "New company updates",
     },
     {
       title: "Personal Notifications",
       icon: <Bell className="h-4 w-4 text-green-600" />,
-      value: unreadNotifications,
+      value: infoQuery.data?.unreadCount || 0,
       desc: "Requires your attention",
     },
   ];
+
+  const renderNotification = (notification: Record<string, any>) => (
+    <Card
+      key={notification.id}
+      className={`bg-card border-border shadow-sm ${
+        !notification.isRead ? "ring-2 ring-primary/20" : ""
+      }`}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+            {getNotificationIcon(notification.messageType)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h4 className="font-medium text-card-foreground flex-1 min-w-0">
+                {notification.title}
+              </h4>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Badge
+                  variant="outline"
+                  className={getTypeColor(notification.messageType)}
+                >
+                  {notification.type}
+                </Badge>
+                {!notification.isRead && (
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                )}
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              {notification.message}
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">
+                {formatDate(notification.createdAt)}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Badge
+                variant="outline"
+                className={getPriorityColor(notification.priority)}
+              >
+                {notification.priority}
+              </Badge>
+              {!notification.isRead && (
+                <div className="w-2 h-2 bg-primary rounded-full"></div>
+              )}
+            </div>
+
+            {!notification.isRead && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => markAsRead(notification.id)}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Mark as read</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -255,7 +324,6 @@ export function AnnouncementsSection() {
             icon={stat.icon}
             value={stat.value}
             key={stat.title}
-            isDemo
           />
         ))}
       </div>
@@ -300,106 +368,32 @@ export function AnnouncementsSection() {
             <h3 className="text-lg font-semibold text-foreground">
               Company Announcements
             </h3>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => markTypeAsRead("general")}
+            >
               Mark All as Read
             </Button>
           </div>
 
-          <div className="space-y-4">
-            {paginatedAnnouncements.map((announcement) => (
-              <Card
-                key={announcement.id}
-                className={`bg-card border-border shadow-sm relative ${
-                  !announcement.isRead ? "ring-2 ring-primary/20" : ""
-                }`}
-              >
-                <Demo />
-                <CardHeader className="pb-3">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        {getAnnouncementIcon(announcement.type)}
-                      </div>
-                      <div>
-                        <CardTitle className="text-base text-card-foreground">
-                          {announcement.title}
-                        </CardTitle>
-                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="text-sm text-muted-foreground">
-                            By {announcement.author}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            •
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(announcement.date)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Badge
-                        variant="outline"
-                        className={getPriorityColor(announcement.priority)}
-                      >
-                        {announcement.priority}
-                      </Badge>
-                      {!announcement.isRead && (
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {announcement.content}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {totalAnnouncementPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground order-2 sm:order-1">
-                Showing {startAnnouncementIndex + 1} to{" "}
-                {Math.min(
-                  startAnnouncementIndex + itemsPerPage,
-                  generalAnnouncements.length
-                )}{" "}
-                of {generalAnnouncements.length} announcements
-              </p>
-              <div className="flex flex-wrap items-center gap-2 order-1 sm:order-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setAnnouncementsPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={announcementsPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {announcementsPage} of {totalAnnouncementPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setAnnouncementsPage((prev) =>
-                      Math.min(prev + 1, totalAnnouncementPages)
-                    )
-                  }
-                  disabled={announcementsPage === totalAnnouncementPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaginatedTable
+            data={generalQuery.data?.notifications || []}
+            renderItem={renderNotification}
+            emptyState={<EmptyState />}
+            handleFirst={() => handleFirstPage("general")}
+            handleNextPage={() =>
+              handleNextPage(generalQuery.data || [], "general")
+            }
+            handlePrevPage={() =>
+              handlePreviousPage(generalQuery.data || [], "general")
+            }
+            canGoNext={canGoNext(generalQuery.data || {})}
+            canGoPrev={canGoPrevious(generalQuery.data || {})}
+            isFirstPage={() => isFirstPage("general")}
+            isLoading={generalLoading}
+            hasMore={!!generalQuery.data?.nextCursor}
+          />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-4">
@@ -407,98 +401,30 @@ export function AnnouncementsSection() {
             <h3 className="text-lg font-semibold text-foreground">
               Your Notifications
             </h3>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => markTypeAsRead("info")}
+            >
               Mark All as Read
             </Button>
           </div>
 
-          <div className="space-y-4">
-            {paginatedNotifications.map((notification) => (
-              <Card
-                key={notification.id}
-                className={`bg-card border-border shadow-sm ${
-                  !notification.isRead ? "ring-2 ring-primary/20" : ""
-                }`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-medium text-card-foreground flex-1 min-w-0">
-                          {notification.title}
-                        </h4>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <Badge
-                            variant="outline"
-                            className={getTypeColor(notification.type)}
-                          >
-                            {notification.type}
-                          </Badge>
-                          {!notification.isRead && (
-                            <div className="w-2 h-2 bg-primary rounded-full"></div>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                        {notification.content}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(notification.date)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {totalNotificationPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground order-2 sm:order-1">
-                Showing {startNotificationIndex + 1} to{" "}
-                {Math.min(
-                  startNotificationIndex + itemsPerPage,
-                  personalNotifications.length
-                )}{" "}
-                of {personalNotifications.length} notifications
-              </p>
-              <div className="flex flex-wrap items-center gap-2 order-1 sm:order-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setNotificationsPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={notificationsPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {notificationsPage} of {totalNotificationPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setNotificationsPage((prev) =>
-                      Math.min(prev + 1, totalNotificationPages)
-                    )
-                  }
-                  disabled={notificationsPage === totalNotificationPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <PaginatedTable
+            data={infoQuery.data?.notifications || []}
+            renderItem={renderNotification}
+            emptyState={<EmptyState />}
+            handleFirst={() => handleFirstPage("info")}
+            handleNextPage={() => handleNextPage(infoQuery.data || [], "info")}
+            handlePrevPage={() =>
+              handlePreviousPage(infoQuery.data || [], "info")
+            }
+            canGoNext={canGoNext(infoQuery.data || {})}
+            canGoPrev={canGoPrevious(infoQuery.data || {})}
+            isFirstPage={() => isFirstPage("info")}
+            isLoading={infoLoading}
+            hasMore={!!infoQuery.data?.nextCursor}
+          />
         </TabsContent>
       </Tabs>
     </div>

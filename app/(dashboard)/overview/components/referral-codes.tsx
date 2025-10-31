@@ -10,6 +10,7 @@ const ReferralCodes = ({
   referralCodes: { marketer: string; shopper: string };
   isLoading: boolean;
 }) => {
+  const url = typeof window !== "undefined" ? window.location.hostname : "";
   return (
     <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200">
       <CardHeader className="pb-3">
@@ -70,7 +71,7 @@ const ReferralCodes = ({
             <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
               <Copy className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
               <span className="text-xs sm:text-sm text-muted-foreground font-mono truncate">
-                {`https://myapp.com/join/${referralCodes.marketer}`}
+                {`${url}/join/${referralCodes.marketer}`}
               </span>
             </div>
             <div className="flex gap-1">

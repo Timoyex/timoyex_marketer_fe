@@ -7,24 +7,24 @@ import { useAuthStore } from "@/lib/stores";
 import { authApi } from "./auth";
 import { FE_URL } from "@/app.config";
 
-const API_BASE_URL = FE_URL || "https://timoyex-affiliate-dash-api.vercel.app";
-
+const API_BASE_URL = FE_URL || "http://localhost:8000";
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
   timeout: 10000, // 10 seconds
+  withCredentials: true,
 });
 
 // Auth endpoints that should never have Authorization headers
 const AUTH_ENDPOINTS = [
-  "/v1/auth/login",
-  "/v1/auth/refresh",
-  "/v1/auth/register",
-  "/v1/auth/refresh",
-  "/v1/auth/forgot-password",
-  "/v1/auth/reset-password",
+  "/v1/login",
+  "/v1/refresh",
+  "/v1/register",
+  "/v1/refresh",
+  "/v1/forgot-password",
+  "/v1/reset-password",
   "/health",
 ];
 
@@ -96,7 +96,7 @@ apiClient.interceptors.response.use(
             queryClient.clear();
           }
 
-          window.location.href = "/auth/login";
+          window.location.href = "/login";
         }
 
         return Promise.reject(error);
@@ -129,7 +129,7 @@ apiClient.interceptors.response.use(
             queryClient.clear();
           }
 
-          window.location.href = "/auth/login";
+          window.location.href = "/login";
         }
 
         return Promise.reject(refreshError);

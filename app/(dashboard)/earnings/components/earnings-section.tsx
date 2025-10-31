@@ -32,49 +32,9 @@ import {
 } from "recharts";
 import { InfoCard } from "@/components/custom/infocard";
 import Demo from "@/components/custom/demo";
-
-// Sample earnings data
-const monthlyEarnings = [
-  { month: "Jan", commission: 2400, bonus: 200, total: 2600 },
-  { month: "Feb", commission: 1398, bonus: 150, total: 1548 },
-  { month: "Mar", commission: 9800, bonus: 800, total: 10600 },
-  { month: "Apr", commission: 3908, bonus: 300, total: 4208 },
-  { month: "May", commission: 4800, bonus: 400, total: 5200 },
-  { month: "Jun", commission: 3800, bonus: 350, total: 4150 },
-  { month: "Jul", commission: 4300, bonus: 380, total: 4680 },
-  { month: "Aug", commission: 5200, bonus: 450, total: 5650 },
-  { month: "Sep", commission: 4100, bonus: 320, total: 4420 },
-  { month: "Oct", commission: 6200, bonus: 520, total: 6720 },
-  { month: "Nov", commission: 5800, bonus: 480, total: 6280 },
-  { month: "Dec", commission: 7200, bonus: 600, total: 7800 },
-];
-
-const commissionBreakdown = [
-  {
-    source: "Direct Sales",
-    amount: 15420,
-    percentage: 34,
-    color: "var(--chart-1)",
-  },
-  {
-    source: "Team Commission",
-    amount: 18650,
-    percentage: 41,
-    color: "var(--chart-2)",
-  },
-  {
-    source: "Bonuses",
-    amount: 6230,
-    percentage: 14,
-    color: "var(--chart-3)",
-  },
-  {
-    source: "Overrides",
-    amount: 4950,
-    percentage: 11,
-    color: "var(--chart-4)",
-  },
-];
+import { useEarnings } from "@/hooks/earning.hook";
+import { shuffleArray, snakeToTitleCase } from "@/lib/currency-utils";
+import { usePayments } from "@/hooks/payments.hook";
 
 const paymentHistory = [
   {
@@ -159,13 +119,41 @@ const paymentHistory = [
   },
 ];
 
+function transformBreakdownToChart(
+  breakdown: Array<{
+    type: string;
+    amount: number;
+    count: number;
+    percentage: number;
+  }>
+) {
+  // Define your chart colors
+  const chartColors = [
+    "var(--chart-1)",
+    "var(--chart-2)",
+    "var(--chart-3)",
+    "var(--chart-4)",
+    "var(--chart-5)",
+  ];
+
+  // Shuffle colors to randomize assignment
+  const shuffledColors = shuffleArray(chartColors);
+
+  return breakdown.map((item, index) => ({
+    source: snakeToTitleCase(item.type),
+    amount: item.amount,
+    percentage: item.percentage,
+    color: shuffledColors[index % shuffledColors.length],
+  }));
+}
+
 const chartConfig = {
-  commission: {
-    label: "Commission",
+  team_commission: {
+    label: "Salary",
     color: "var(--chart-1)",
   },
-  bonus: {
-    label: "Bonus",
+  direct_sales: {
+    label: "Commission",
     color: "var(--chart-2)",
   },
   total: {
@@ -175,28 +163,20 @@ const chartConfig = {
 };
 
 export function EarningsSection() {
-  const [selectedPeriod, setSelectedPeriod] = useState("12months");
+  const { earningsOverviewQuery, isOverviewLoading } = useEarnings({
+    includeStats: true,
+  });
+  const { paymentHistoryQuery } = usePayments({});
+  const paymentHistoryData = paymentHistoryQuery.data;
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 5;
 
-  const totalEarnings = monthlyEarnings.reduce(
-    (sum, month) => sum + month.total,
-    0
+  const monthlyEarnings =
+    earningsOverviewQuery.data?.analytics?.earningsTimeSeries || [];
+
+  const commissionBreakdown = transformBreakdownToChart(
+    earningsOverviewQuery.data?.breakdown || []
   );
-  const totalCommission = monthlyEarnings.reduce(
-    (sum, month) => sum + month.commission,
-    0
-  );
-  const totalBonus = monthlyEarnings.reduce(
-    (sum, month) => sum + month.bonus,
-    0
-  );
-  const pendingAmount = paymentHistory
-    .filter(
-      (payment) =>
-        payment.status === "Pending" || payment.status === "Processing"
-    )
-    .reduce((sum, payment) => sum + payment.amount, 0);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -222,7 +202,10 @@ export function EarningsSection() {
   const summary = [
     {
       title: "Total Earned",
-      value: totalEarnings.toLocaleString(),
+      value:
+        "₦" +
+          earningsOverviewQuery.data?.summary?.totalEarnings?.toLocaleString() ||
+        0,
       icon: <Wallet className="h-4 w-4 text-blue-600" />,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
@@ -231,7 +214,7 @@ export function EarningsSection() {
     },
     {
       title: "Pending Withdrawals",
-      value: pendingAmount.toLocaleString(),
+      value: "₦" + Number(paymentHistoryData?.pending || 0).toLocaleString(),
       icon: <Clock className="h-4 w-4 text-purple-600" />,
       iconBg: "bg-purple-100",
       iconColor: "text-purple-600",
@@ -240,7 +223,7 @@ export function EarningsSection() {
     },
     {
       title: "Last Payout",
-      value: 6720,
+      value: "₦" + Number(paymentHistoryData?.lastPayout || 0).toLocaleString(),
       icon: <CreditCard className="h-4 w-4 text-orange-600" />,
       iconBg: "bg-orange-100",
       iconColor: "text-orange-600",
@@ -269,8 +252,8 @@ export function EarningsSection() {
           </p>
         </div>
         <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-          <Download className="h-4 w-4" />
-          Export Report
+          <DollarSign className="h-4 w-4" />
+          Request Payment
         </Button>
       </div>
 
@@ -285,7 +268,6 @@ export function EarningsSection() {
             value={item.value}
             key={index}
             iconBg={item.iconBg}
-            isDemo={true}
           />
         ))}
       </div>
@@ -293,7 +275,6 @@ export function EarningsSection() {
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Earnings Trend Chart */}
         <Card className="bg-card border-border shadow-sm relative">
-          <Demo />
           <CardHeader>
             <CardTitle className="text-card-foreground">
               Earnings Trend
@@ -327,14 +308,14 @@ export function EarningsSection() {
 
                   <Line
                     type="monotone"
-                    dataKey="commission"
+                    dataKey="direct_sales"
                     stroke="var(--chart-4)"
                     strokeWidth={2}
                     dot={{ fill: "var(--chart-4)", strokeWidth: 2, r: 4 }}
                   />
                   <Line
                     type="monotone"
-                    dataKey="bonus"
+                    dataKey="team_commission"
                     stroke="var(--chart-3)"
                     strokeWidth={2}
                     dot={{ fill: "var(--chart-3)", strokeWidth: 2, r: 4 }}
@@ -354,7 +335,6 @@ export function EarningsSection() {
 
         {/* Commission Breakdown */}
         <Card className="bg-card border-border shadow-sm relative">
-          <Demo />
           <CardHeader>
             <CardTitle className="text-card-foreground">
               Commission Breakdown

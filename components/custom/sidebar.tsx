@@ -136,20 +136,14 @@ export function Sidebar() {
                     {isLoading ? (
                       <Skeleton className="inline-block" />
                     ) : (
-                      "Level 1"
+                      `Level ${profileQuery.data?.level || 0}`
                     )}
                   </p>
                   <div className="flex gap-1 flex-wrap justify-center mt-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {isLoading ? (
-                        <Skeleton className="inline-block" />
-                      ) : (
-                        "⭐ Top Recruiter"
-                      )}
-                    </Badge>
+                    {/*                    
                     <Badge variant="secondary" className="text-xs">
                       {isLoading ? <Skeleton /> : `🔥 Active Marketer`}
-                    </Badge>
+                    </Badge> */}
                   </div>
                 </motion.div>
               )}
@@ -220,7 +214,7 @@ export function Sidebar() {
                 )}
                 asChild
               >
-                <Link href="/auth/login" onClick={logout}>
+                <Link href="/login" onClick={logout}>
                   <LogOut className="h-5 w-5 flex-shrink-0" />
                   {!sidebarCollapsed && <span>Logout</span>}
                 </Link>
@@ -331,7 +325,7 @@ export function Sidebar() {
                   asChild
                   onClick={closeMobileSidebar}
                 >
-                  <Link href="/auth/login">
+                  <Link href="/login">
                     <LogOut className="h-5 w-5" />
                     Logout
                   </Link>

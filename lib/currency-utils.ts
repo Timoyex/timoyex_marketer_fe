@@ -14,30 +14,57 @@ export const currencies = [
   { code: "INR", symbol: "₹", name: "Indian Rupee", rate: 83 },
   { code: "AUD", symbol: "A$", name: "Australian Dollar", rate: 1.35 },
   { code: "CHF", symbol: "Fr", name: "Swiss Franc", rate: 0.92 },
-]
+];
 
 export function getCurrencySymbol(currencyCode: string): string {
-  const currency = currencies.find((c) => c.code === currencyCode)
-  return currency?.symbol || "$"
+  const currency = currencies.find((c) => c.code === currencyCode);
+  return currency?.symbol || "$";
 }
 
-export function convertCurrency(amount: number, fromCurrency: string, toCurrency: string): number {
-  const fromRate = currencies.find((c) => c.code === fromCurrency)?.rate || 1
-  const toRate = currencies.find((c) => c.code === toCurrency)?.rate || 1
+export function convertCurrency(
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string
+): number {
+  const fromRate = currencies.find((c) => c.code === fromCurrency)?.rate || 1;
+  const toRate = currencies.find((c) => c.code === toCurrency)?.rate || 1;
 
   // Convert to USD first, then to target currency
-  const usdAmount = amount / fromRate
-  return usdAmount * toRate
+  const usdAmount = amount / fromRate;
+  return usdAmount * toRate;
 }
 
 export function formatCurrency(amount: number, currencyCode: string): string {
-  const symbol = getCurrencySymbol(currencyCode)
-  return `${symbol}${amount.toLocaleString()}`
+  const symbol = getCurrencySymbol(currencyCode);
+  return `${symbol}${amount.toLocaleString()}`;
 }
 
 export function getSelectedCurrency(): string {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("selectedCurrency") || "NGN"
+    return localStorage.getItem("selectedCurrency") || "NGN";
   }
-  return "NGN"
+  return "NGN";
+}
+
+// Function to convert snake_case to Title Case
+export function snakeToTitleCase(str: string): string {
+  return str
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+// Function to get a random color from an array
+export function getRandomColor(colors: string[]): string {
+  return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Function to shuffle an array (Fisher-Yates algorithm)
+export function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }

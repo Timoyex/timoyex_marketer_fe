@@ -1,11 +1,13 @@
 import { EndpointResponse } from "../stores";
 import { UserProfile } from "../stores/profile.store";
 import { apiClient } from "./client";
+import { Preferences } from "./settings";
 
 export interface LoginRequest {
   email: string;
   password: string;
   rememberMe?: boolean;
+  isAdmin?: boolean;
 }
 
 export interface RegisterRequest {
@@ -14,7 +16,7 @@ export interface RegisterRequest {
   email: string;
   phone: string;
   password: string;
-  confirmPassword: string;
+  confirmPassword?: string;
 }
 
 export interface AuthResponse extends EndpointResponse {
@@ -24,6 +26,9 @@ export interface AuthResponse extends EndpointResponse {
     refresh_token: string;
     isVerified: boolean;
     sub: string;
+    preferences?: Preferences;
+    role: string;
+    token?: string;
   };
 }
 
@@ -36,7 +41,7 @@ export const authApi = {
 
   // Register
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await apiClient.post("/v1/auth/register", data);
+    const response = await apiClient.post("/v2/auth/register", data);
     return response.data;
   },
 

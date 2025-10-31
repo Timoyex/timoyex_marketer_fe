@@ -1,14 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Users,
-  DollarSign,
-  Clock,
-  Award,
-  CreditCard,
-  UserPlus,
-} from "lucide-react";
+import { Users, DollarSign, Clock, UserPlus } from "lucide-react";
 
 import { InfoCard } from "@/components/custom/infocard";
 import { useProfile } from "@/hooks/profile.hook";
@@ -19,76 +11,12 @@ import {
 } from "@/components/custom/skeleton";
 import LevelProgress from "./level-progress";
 import ReferralCodes from "./referral-codes";
-import TaskChecklist from "./task-checklist";
-import RecentActivity from "./recent-activity";
 import DirectRecruitsChart from "./direct-recruits";
 import MonthlyRevenueChart from "./monthly-rev";
 import { Skeleton } from "@/components/ui/skeleton";
-
-const monthlyRevenueData = [
-  { month: "Jan", revenue: 3200 },
-  { month: "Feb", revenue: 2800 },
-  { month: "Mar", revenue: 4100 },
-  { month: "Apr", revenue: 3600 },
-  { month: "May", revenue: 4800 },
-  { month: "Jun", revenue: 5200 },
-];
-
-const earningsData = [
-  { month: "Jan", earnings: 2400, recruits: 12 },
-  { month: "Feb", earnings: 1398, recruits: 8 },
-  { month: "Mar", earnings: 9800, recruits: 25 },
-  { month: "Apr", earnings: 3908, recruits: 18 },
-  { month: "May", earnings: 4800, recruits: 22 },
-  { month: "Jun", earnings: 3800, recruits: 15 },
-  { month: "Jul", earnings: 4300, recruits: 19 },
-  { month: "Aug", earnings: 5200, recruits: 24 },
-  { month: "Sep", earnings: 4100, recruits: 17 },
-  { month: "Oct", earnings: 6200, recruits: 28 },
-  { month: "Nov", earnings: 5800, recruits: 26 },
-  { month: "Dec", earnings: 7200, recruits: 32 },
-];
-
-const initialTasks = [
-  { id: 1, text: "Share your referral link", completed: true },
-  { id: 2, text: "Recruit 3 members this week", completed: false },
-  { id: 3, text: "Update your profile", completed: false },
-  { id: 4, text: "Complete training module", completed: true },
-  { id: 5, text: "Set up payment method", completed: false },
-];
-
-const recentActivity = [
-  {
-    id: 1,
-    text: "John Doe joined your team",
-    date: "Aug 20, 2025",
-    icon: UserPlus,
-  },
-  {
-    id: 2,
-    text: "Commission payout requested",
-    date: "Aug 21, 2025",
-    icon: CreditCard,
-  },
-  {
-    id: 3,
-    text: "Level 2 achievement unlocked",
-    date: "Aug 19, 2025",
-    icon: Award,
-  },
-  {
-    id: 4,
-    text: "Sarah Smith made a purchase",
-    date: "Aug 18, 2025",
-    icon: DollarSign,
-  },
-  {
-    id: 5,
-    text: "New team member activated",
-    date: "Aug 17, 2025",
-    icon: Users,
-  },
-];
+import { useTeam } from "@/hooks/team.hook";
+import { useRevenue } from "@/hooks/revenue.hook";
+import { usePayments } from "@/hooks/payments.hook";
 
 const chartConfig = {
   earnings: {
@@ -106,49 +34,53 @@ const chartConfig = {
 };
 
 export function OverviewSection() {
-  const { profileQuery, isLoading, getError } = useProfile();
-  const profile = profileQuery.data;
+  const { profileQuery, isLoading } = useProfile();
+  const { teamStats: memberStats } = useTeam(
+    profileQuery.data?.marketerCode || ""
+  );
+  const { revenueOverviewQuery } = useRevenue();
+  const { paymentHistoryQuery } = usePayments({});
 
-  const [tasks, setTasks] = useState(initialTasks);
+  const paymentHistory = paymentHistoryQuery.data;
+
+  const revenueStats = revenueOverviewQuery.data;
+  const profile = profileQuery.data;
 
   const stats = [
     {
       title: "Total Recruits",
-      value: "1,234",
-      desc: "+12% from last month",
+      value: memberStats?.totalDownlines || 0,
+      desc: "Total Members(Including Sub-Members)",
       icon: <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />,
       iconBg: "bg-blue-100",
+      isDemo: false,
     },
     {
       title: "Direct Recruits",
-      value: "24",
-      desc: "+5% from last month",
+      value: memberStats?.directMembers || 0,
+      desc: "Total Direct Members",
       icon: <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />,
       iconBg: "bg-green-100",
+      isDemo: false,
     },
     {
       title: "Monthly Revenue",
-      value: "₦52,400",
-      desc: "+18% from last year",
+      value:
+        "₦" + Number(revenueStats?.totalMonthlyRevenue || 0).toLocaleString(),
+      desc: "For this Month",
       icon: <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />,
       iconBg: "bg-purple-100",
+      isDemo: false,
     },
     {
       title: "Pending Payments",
-      value: "₦2,847",
+      value: "₦" + Number(paymentHistory?.pending || 0).toLocaleString(),
       desc: "Processing...",
       icon: <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />,
       iconBg: "bg-orange-100",
+      isDemo: false,
     },
   ];
-
-  const toggleTask = (taskId: number) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
-  };
 
   const referralCodes = {
     marketer: profile?.marketerCode || "",
@@ -187,7 +119,7 @@ export function OverviewSection() {
               icon={stat.icon}
               key={stat.title}
               iconBg={stat.iconBg}
-              isDemo={true}
+              isDemo={stat.isDemo}
             />
           ))}
       </div>
@@ -198,19 +130,17 @@ export function OverviewSection() {
         <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
           <SkeletalProgress />
           <SkeletalProgress />
-          <SkeletalProgress />
-          <SkeletalProgress />
         </div>
       )}
       {!isLoading && (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-          <LevelProgress />
+          <LevelProgress
+            userLevel={profileQuery?.data?.level || 0}
+            directRecruits={memberStats?.directMembers}
+            totalRecruits={memberStats?.totalDownlines}
+          />
 
           <ReferralCodes referralCodes={referralCodes} isLoading={isLoading} />
-
-          <TaskChecklist tasks={tasks} toggleTask={toggleTask} />
-
-          <RecentActivity recent={recentActivity} />
         </div>
       )}
 
@@ -226,9 +156,15 @@ export function OverviewSection() {
 
       {!isLoading && (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
-          <DirectRecruitsChart config={chartConfig} data={earningsData} />
+          <DirectRecruitsChart
+            config={chartConfig}
+            data={memberStats?.directMembersDist || []}
+          />
 
-          <MonthlyRevenueChart config={chartConfig} data={monthlyRevenueData} />
+          <MonthlyRevenueChart
+            config={chartConfig}
+            data={revenueStats?.revenueDistribution || []}
+          />
         </div>
       )}
     </div>

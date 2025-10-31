@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { authApi, type LoginRequest, type RegisterRequest } from "@/lib/api";
-import { useAuthStore } from "@/lib/stores";
+import { useAuthStore, useSettingsStore } from "@/lib/stores";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner"; // or your preferred toast library
 
@@ -19,6 +19,7 @@ export function useAuth() {
     refresh_token,
   } = useAuthStore();
 
+  const { setPreferences } = useSettingsStore();
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: authApi.login,
@@ -32,11 +33,19 @@ export function useAuth() {
           id: data.data.profile.id,
           email: data.data.profile.email,
           isVerified: data.data.isVerified,
+          role: data.data.role,
         },
         access_token: data.data.access_token,
         refresh_token: data.data.refresh_token,
       });
-      toast.success("Welcome back!");
+
+      data.data.preferences && setPreferences(data.data.preferences);
+      if (data.data.role === "admin") {
+        toast.success("Welcome Admin!");
+      } else {
+        toast.success("Welcome back!");
+      }
+
       setTimeout(() => {
         console.log("logen in");
       }, 3000);
@@ -74,7 +83,7 @@ export function useAuth() {
       setTimeout(() => {
         console.log("log in please");
       }, 3000);
-      router.push("/auth/login");
+      router.push("/verify-email");
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Registration failed";
@@ -131,12 +140,12 @@ export function useAuth() {
     onSuccess: () => {
       logout();
       toast.success("Logged out successfully");
-      router.push("/auth/login");
+      router.push("/login");
     },
     onError: () => {
       // Still logout locally even if API call fails
       logout();
-      router.push("/auth/login");
+      router.push("/login");
     },
   });
 

@@ -1,7 +1,7 @@
 import { DM_Sans } from "next/font/google";
-import "./globals.css";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/providers/query.provider";
+import "./globals.css";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -22,7 +22,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${dmSans.variable} antialiased`}>
+    <html
+      lang="en"
+      className={`${dmSans.variable} antialiased`}
+      suppressHydrationWarning
+    >
       <body className="font-sans">
         <Toaster position="bottom-center" />
         <QueryProvider>{children}</QueryProvider>

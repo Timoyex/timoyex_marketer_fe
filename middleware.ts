@@ -8,13 +8,51 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith("/join/")) {
     const code = pathname.split("/")[2] || "";
 
-    const url = new URL("/auth/register", request.url);
+    const url = new URL("/register", request.url);
     url.searchParams.set("ref", code);
 
     return NextResponse.redirect(url);
   }
+
+  // Auth checks
+  const accessToken = request.cookies.get("access_token")?.value;
+  const refreshToken = request.cookies.get("refresh_token")?.value;
+
+  const authPages = [
+    "/login",
+    "/register",
+    "/verify",
+    "/verify-email",
+    "/admin",
+    "/newAuth",
+  ];
+
+  const isAuthPage = authPages.some((page) => pathname.startsWith(page));
+  const isPublicPage = pathname === "/";
+  const isProtectedPage = !isPublicPage && !isAuthPage;
+
+  // Redirect authenticated users away from auth pages
+  if (isAuthPage && (accessToken || refreshToken)) {
+    return NextResponse.redirect(new URL("/overview", request.url));
+  }
+
+  // Redirect unauthenticated users to login
+  if (isProtectedPage && !accessToken && !refreshToken) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: "/join/:path*",
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, sitemap.xml, robots.txt
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+  ],
 };

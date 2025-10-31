@@ -1,38 +1,128 @@
-import Demo from "@/components/custom/demo";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { Award } from "lucide-react";
 
-const levelData = [
-  { level: "Level 1", recruits: 25, required: 25, completed: true },
-  { level: "Level 2", recruits: 50, required: 50, completed: true },
-  { level: "Level 3", recruits: 100, required: 100, completed: true },
-  { level: "Level 4", recruits: 200, required: 200, completed: true },
-  { level: "Level 5", recruits: 500, required: 500, completed: true },
-  { level: "Level 6", recruits: 1000, required: 1000, completed: true },
-  { level: "Level 7", recruits: 2000, required: 2000, completed: true },
-  { level: "Level 8", recruits: 5000, required: 5000, completed: true },
-  { level: "Level 9", recruits: 0, required: 10000, completed: false },
-  { level: "Level 10", recruits: 0, required: 25000, completed: false },
-];
-const LevelProgress = () => {
-  const getCurrentLevel = () => {
-    const completedLevels = levelData.filter((level) => level.completed).length;
-    return completedLevels + 1; // Current level is the next incomplete level
+export interface LevelRequirement {
+  direct: number;
+  total: number;
+}
+
+export interface LevelObject {
+  [key: number]: LevelRequirement;
+}
+
+export const levelRequirements: LevelObject = {
+  0: { direct: 0, total: 0 },
+  1: { direct: 5, total: 50 },
+  2: { direct: 15, total: 150 },
+  3: { direct: 65, total: 650 },
+  4: { direct: 100, total: 1000 },
+  5: { direct: 350, total: 3500 },
+  6: { direct: 750, total: 7500 },
+  7: { direct: 1300, total: 13000 },
+  8: { direct: 1900, total: 19_000 },
+  9: { direct: 2500, total: 25000 },
+  10: { direct: 3000, total: 30000 },
+};
+
+const MAX_LEVEL = 10;
+const LEVELS_PER_VIEW = 5;
+
+interface LevelProgressProps {
+  userLevel?: number;
+  directRecruits?: number;
+  totalRecruits?: number;
+}
+
+const LevelProgress = ({
+  userLevel = 8,
+  directRecruits = 150,
+  totalRecruits = 5000,
+}: LevelProgressProps) => {
+  // Ensure userLevel is within valid range
+  const currentLevel = Math.max(0, Math.min(userLevel, MAX_LEVEL));
+
+  const generateLevelData = () => {
+    const levels = [];
+
+    for (let i = 1; i <= MAX_LEVEL; i++) {
+      const required = levelRequirements[i].total;
+      const completed = i < currentLevel;
+      const isCurrentLevel = i === currentLevel;
+
+      // Calculate recruits for display
+      let recruits = 0;
+      if (completed) {
+        recruits = required; // Show full for completed levels
+      } else if (isCurrentLevel) {
+        recruits = totalRecruits; // Show actual progress for current level
+      }
+
+      levels.push({
+        level: i,
+        levelName: `Level ${i}`,
+        recruits,
+        required,
+        completed,
+        isCurrentLevel,
+      });
+    }
+
+    return levels;
+  };
+
+  const levelData = generateLevelData();
+
+  const getNextLevelInfo = () => {
+    // Handle max level reached
+    if (currentLevel >= MAX_LEVEL) {
+      return {
+        recruitsNeeded: 0,
+        direct: 0,
+        nextLevel: MAX_LEVEL,
+        progress: 100,
+        nextRequired: levelRequirements[MAX_LEVEL]?.total || 0,
+      };
+    }
+
+    const currentLevelData = levelRequirements[currentLevel] || {};
+    const nextLevelData = levelRequirements[currentLevel + 1] || {};
+
+    const currentRequired = currentLevelData.total ?? 0;
+    const currentDirectRequired = currentLevelData.direct ?? 0;
+    const nextRequired = nextLevelData.total ?? currentRequired;
+    const nextDirectRequired = nextLevelData.direct ?? currentDirectRequired;
+
+    const recruitsNeeded = Math.max(0, nextRequired - totalRecruits);
+    const direct = Math.max(0, nextDirectRequired - directRecruits);
+
+    // Calculate progress between current and next level
+    const progressRange = Math.max(1, nextRequired - currentRequired);
+    const currentProgress = Math.max(0, totalRecruits - currentRequired);
+    const progress = Math.min(100, (currentProgress / progressRange) * 100);
+
+    return {
+      recruitsNeeded,
+      direct,
+      nextLevel: Math.min(currentLevel + 1, MAX_LEVEL),
+      progress,
+      nextRequired,
+    };
   };
 
   const getVisibleLevels = () => {
-    const currentLevel = getCurrentLevel();
-    if (currentLevel <= 5) {
-      return levelData.slice(0, 5); // Show levels 1-5
+    if (currentLevel <= LEVELS_PER_VIEW) {
+      return levelData.slice(0, LEVELS_PER_VIEW);
     } else {
-      return levelData.slice(5, 10); // Show levels 6-10
+      return levelData.slice(LEVELS_PER_VIEW, MAX_LEVEL);
     }
   };
+
+  const nextLevelInfo = getNextLevelInfo();
+
   return (
-    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200 relative">
-      <Demo />
+    <Card className="bg-card border-border shadow-sm hover:scale-105 transition-transform duration-200">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-card-foreground text-sm sm:text-base">
           <div className="p-1.5 bg-blue-100 rounded-lg">
@@ -44,45 +134,66 @@ const LevelProgress = () => {
       <CardContent className="space-y-3 pb-4">
         <div className="text-center space-y-2">
           <h3 className="text-base sm:text-lg font-semibold">
-            You are Level {getCurrentLevel()}
+            You are Level {currentLevel}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Need 11 more recruits for Level 3
-          </p>
-          <div className="space-y-2">
-            <Progress value={89} className="h-3" />
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>89 recruits</span>
-              <span>100 required</span>
-            </div>
-          </div>
+          {currentLevel < MAX_LEVEL ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Need {nextLevelInfo.recruitsNeeded.toLocaleString()} more
+                members for Level {nextLevelInfo.nextLevel}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                [{nextLevelInfo?.direct?.toLocaleString() || 0} members
+                compulsory]
+              </p>
+              <div className="space-y-2">
+                <Progress
+                  value={nextLevelInfo.progress}
+                  className="h-3"
+                  aria-label={`Progress to level ${nextLevelInfo.nextLevel}`}
+                />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>{totalRecruits.toLocaleString()} members</span>
+                  <span>
+                    {nextLevelInfo?.nextRequired?.toLocaleString() || 0}{" "}
+                    required
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-green-600 font-medium">
+              Maximum level reached! 🎉
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
-          {getVisibleLevels().map((level, index) => {
+          {getVisibleLevels().map((level) => {
             const progress = level.completed
               ? 100
-              : (level.recruits / level.required) * 100;
-            const actualIndex = getCurrentLevel() <= 5 ? index : index + 5;
-            const isCurrentLevel = actualIndex === 2;
+              : level.isCurrentLevel
+              ? (level.recruits / level.required) * 100
+              : 0;
 
             return (
               <div key={level.level} className="space-y-1">
                 <div className="flex items-center justify-between">
                   <span
                     className={`text-sm font-medium ${
-                      isCurrentLevel
+                      level.isCurrentLevel
                         ? "text-primary"
                         : level.completed
                         ? "text-green-600"
                         : "text-muted-foreground"
                     }`}
                   >
-                    {level.level} {level.completed && "✅"}{" "}
-                    {isCurrentLevel && "(Current)"}
+                    {level.levelName} {level.completed && "✅"}{" "}
+                    {level.isCurrentLevel && "(Current)"}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {level.recruits}/{level.required} recruits
+                    {level.recruits.toLocaleString()}/
+                    {level.required.toLocaleString()} members
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
@@ -90,18 +201,23 @@ const LevelProgress = () => {
                     className={`h-2 rounded-full transition-all duration-300 ${
                       level.completed
                         ? "bg-green-500"
-                        : isCurrentLevel
+                        : level.isCurrentLevel
                         ? "bg-primary"
                         : "bg-muted-foreground/30"
                     }`}
                     style={{ width: `${Math.min(progress, 100)}%` }}
+                    role="progressbar"
+                    aria-valuenow={Math.round(progress)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`${level.levelName} progress`}
                   />
                 </div>
               </div>
             );
           })}
 
-          {getCurrentLevel() > 5 && (
+          {currentLevel > LEVELS_PER_VIEW && (
             <div className="text-center pt-2">
               <Badge variant="secondary" className="text-xs">
                 Advanced Levels (6-10)
@@ -109,6 +225,17 @@ const LevelProgress = () => {
             </div>
           )}
         </div>
+
+        {directRecruits > 0 && (
+          <div className="text-center pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground mt-2">
+              Direct Members:{" "}
+              <span className="font-medium">
+                {directRecruits.toLocaleString()}
+              </span>
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

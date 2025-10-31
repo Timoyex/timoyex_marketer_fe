@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -23,114 +26,296 @@ import {
   MessageSquare,
   Smartphone,
   Shield,
-  Download,
   Trash2,
   AlertTriangle,
+  Edit3,
+  Save,
+  X,
+  Loader2,
 } from "lucide-react";
+import { currencies, timezones } from "@/lib/constants";
+import { cleanPayload, getChangedValues } from "@/lib/form.utils";
+import { useSettings } from "@/hooks/settings.hook";
+import { toast } from "sonner";
+import { NotificationSettings, Preferences } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
-const currencies = [
-  { code: "USD", symbol: "$", name: "US Dollar", rate: 1 },
-  { code: "EUR", symbol: "€", name: "Euro", rate: 0.85 },
-  { code: "GBP", symbol: "£", name: "British Pound", rate: 0.73 },
-  { code: "CAD", symbol: "C$", name: "Canadian Dollar", rate: 1.25 },
-  { code: "NGN", symbol: "₦", name: "Nigerian Naira", rate: 750 },
-  { code: "ZAR", symbol: "R", name: "South African Rand", rate: 18.5 },
-  { code: "KES", symbol: "KSh", name: "Kenyan Shilling", rate: 110 },
-  { code: "GHS", symbol: "₵", name: "Ghanaian Cedi", rate: 12 },
-  { code: "EGP", symbol: "£E", name: "Egyptian Pound", rate: 31 },
-  { code: "MAD", symbol: "DH", name: "Moroccan Dirham", rate: 10 },
-  { code: "JPY", symbol: "¥", name: "Japanese Yen", rate: 110 },
-  { code: "CNY", symbol: "¥", name: "Chinese Yuan", rate: 6.5 },
-  { code: "INR", symbol: "₹", name: "Indian Rupee", rate: 83 },
-  { code: "AUD", symbol: "A$", name: "Australian Dollar", rate: 1.35 },
-  { code: "CHF", symbol: "Fr", name: "Swiss Franc", rate: 0.92 },
-];
+const currencyCode = currencies.map((c) => c.code);
+const zones = timezones.map((t) => t.value);
 
-const timezones = [
-  { value: "Africa/Lagos", label: "West Africa Time (WAT)" },
-  { value: "Africa/Cairo", label: "Egypt Standard Time" },
-  { value: "Africa/Johannesburg", label: "South Africa Standard Time" },
-  { value: "Africa/Nairobi", label: "East Africa Time" },
-  { value: "Africa/Casablanca", label: "Morocco Standard Time" },
-  { value: "America/New_York", label: "Eastern Time (ET)" },
-  { value: "America/Chicago", label: "Central Time (CT)" },
-  { value: "America/Denver", label: "Mountain Time (MT)" },
-  { value: "America/Los_Angeles", label: "Pacific Time (PT)" },
-  { value: "America/Toronto", label: "Eastern Time - Toronto" },
-  { value: "Europe/London", label: "Greenwich Mean Time (GMT)" },
-  { value: "Europe/Paris", label: "Central European Time" },
-  { value: "Europe/Berlin", label: "Central European Time - Berlin" },
-  { value: "Europe/Rome", label: "Central European Time - Rome" },
-  { value: "Asia/Tokyo", label: "Japan Standard Time" },
-  { value: "Asia/Shanghai", label: "China Standard Time" },
-  { value: "Asia/Kolkata", label: "India Standard Time" },
-  { value: "Asia/Dubai", label: "Gulf Standard Time" },
-  { value: "Australia/Sydney", label: "Australian Eastern Time" },
-  { value: "Pacific/Auckland", label: "New Zealand Standard Time" },
-];
+// Schemas
+const preferenceSchema = z.object({
+  theme: z.enum(["light", "dark", "system"]).nullish(),
+  timezone: z
+    .string()
+    .refine((val) => zones.includes(val), "Invalid timezone")
+    .nullish(),
+  currency: z
+    .string()
+    .refine((val) => currencyCode.includes(val), "Invalid currency code")
+    .nullish(),
+});
+
+const emailNotificationSettingsSchema = z.object({
+  isActive: z.boolean(),
+  companyAnnouncements: z.boolean(),
+  teamUpdates: z.boolean(),
+  paymentAlerts: z.boolean(),
+  marketingEmails: z.boolean(),
+});
+
+const smsNotificationSettingsSchema = z.object({
+  isActive: z.boolean(),
+  paymentAlerts: z.boolean(),
+  urgentUpdates: z.boolean(),
+});
+
+const inAppNotificationSettingsSchema = z.object({
+  isActive: z.boolean(),
+  allNotifications: z.boolean(),
+  notificationSounds: z.boolean(),
+});
+
+export const notificationsSchema = z.object({
+  email: emailNotificationSettingsSchema,
+  sms: smsNotificationSettingsSchema,
+  inApp: inAppNotificationSettingsSchema,
+});
 
 export function SettingsSection() {
-  const { theme, setTheme } = useTheme();
-  const [notifications, setNotifications] = useState({
-    email: {
-      active: true,
-      announcements: true,
-      teamUpdates: true,
-      paymentAlerts: true,
-      marketingEmails: false,
-    },
-    sms: {
-      active: true,
-      paymentAlerts: true,
-      urgentUpdates: true,
-      teamNotifications: false,
-    },
-    inApp: {
-      active: true,
-      allNotifications: true,
-      sounds: true,
-      desktop: true,
+  const { settingsQuery, updateSettings, isLoading } = useSettings();
+  const { setTheme } = useTheme();
+
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [updatingSections, setUpdatingSections] = useState<
+    Record<string, boolean>
+  >({});
+
+  const preferencesForm = useForm({
+    resolver: zodResolver(preferenceSchema),
+    defaultValues: async () => {
+      const data = settingsQuery.data?.preferences;
+
+      return {
+        theme: data?.theme ?? "system",
+        timezone: data?.timezone ?? "Africa/Lagos",
+        currency: data?.currency ?? "NGN",
+      };
     },
   });
 
-  const [preferences, setPreferences] = useState({
-    language: "en",
-    timezone: "Africa/Lagos", // Default to WAT timezone
-    currency: "NGN", // Default to Nigerian Naira
-    dateFormat: "MM/DD/YYYY",
+  const notificationsForm = useForm({
+    resolver: zodResolver(notificationsSchema),
+    defaultValues: async () => {
+      const data = settingsQuery.data?.notifications;
+      return {
+        email: {
+          isActive: data?.email?.isActive ?? false,
+          companyAnnouncements: data?.email?.companyAnnouncements ?? false,
+          teamUpdates: data?.email?.teamUpdates ?? false,
+          paymentAlerts: data?.email?.paymentAlerts ?? false,
+          marketingEmails: data?.email?.marketingEmails ?? false,
+        },
+        sms: {
+          isActive: data?.sms?.isActive ?? false,
+          paymentAlerts: data?.sms?.paymentAlerts ?? false,
+          urgentUpdates: data?.sms?.urgentUpdates ?? false,
+        },
+        inApp: {
+          isActive: data?.inApp?.isActive ?? false,
+          allNotifications: data?.inApp?.allNotifications ?? false,
+          notificationSounds: data?.inApp?.notificationSounds ?? false,
+        },
+      };
+    },
   });
 
-  const handleNotificationChange = (
-    category: keyof typeof notifications,
-    setting: string,
-    value: boolean
-  ) => {
-    setNotifications((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [setting]: value,
-      },
-    }));
-  };
-
-  const handlePreferenceChange = (
-    setting: keyof typeof preferences,
-    value: string
-  ) => {
-    setPreferences((prev) => ({
-      ...prev,
-      [setting]: value,
-    }));
-
-    if (setting === "currency") {
-      localStorage.setItem("selectedCurrency", value);
-      // Trigger a custom event to notify other components of currency change
-      window.dispatchEvent(
-        new CustomEvent("currencyChanged", { detail: value })
-      );
+  // Reset forms when backend data loads
+  useEffect(() => {
+    if (settingsQuery.data?.preferences) {
+      preferencesForm.reset(settingsQuery.data.preferences);
     }
+    if (settingsQuery.data?.notifications) {
+      notificationsForm.reset(settingsQuery.data.notifications);
+    }
+  }, [settingsQuery.data, preferencesForm, notificationsForm]);
+
+  // Section Header Component
+  const SectionHeader = ({
+    title,
+    icon: Icon,
+    sectionKey,
+  }: {
+    title: string;
+    icon: any;
+    sectionKey: "preferences" | "notifications";
+  }) => {
+    const isEditing = editingSection === sectionKey;
+    const isUpdating = updatingSections?.[sectionKey] ?? false;
+
+    return (
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle className="flex items-center gap-2 text-card-foreground">
+          <Icon className="h-5 w-5" />
+          {title}
+        </CardTitle>
+        {!isEditing ? (
+          <Button
+            onClick={() => setEditingSection(sectionKey)}
+            disabled={isUpdating}
+            className="gap-2"
+          >
+            <Edit3 className="h-4 w-4" />
+            Edit
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleSave(sectionKey)}
+              disabled={isUpdating}
+            >
+              {isUpdating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {isUpdating ? "Saving..." : "Save Changes"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleCancel(sectionKey)}
+              disabled={isUpdating}
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+          </div>
+        )}
+      </CardHeader>
+    );
   };
+
+  // Save handler
+  const handleSave = async (sectionKey: string) => {
+    setUpdatingSections((prev) => ({ ...prev, [sectionKey]: true }));
+
+    const formMap: Record<string, { form: any }> = {
+      preferences: { form: preferencesForm },
+      notifications: { form: notificationsForm },
+    };
+
+    const selected = formMap[sectionKey];
+
+    if (!selected) {
+      setUpdatingSections((prev) => ({ ...prev, [sectionKey]: false }));
+      return;
+    }
+
+    const { form } = selected;
+
+    // Validate form
+    if (!(await form.trigger())) {
+      setUpdatingSections((prev) => ({ ...prev, [sectionKey]: false }));
+      return;
+    }
+
+    // Wait for next tick to ensure dirty fields are updated
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Get changed values
+    const changedValues = getChangedValues(
+      form.formState.dirtyFields,
+      form.getValues()
+    );
+
+    console.log("=== DETAILED FORM DEBUG ===");
+    console.log("Section:", sectionKey);
+    console.log("Raw form values:", form.getValues());
+    console.log("Raw dirty fields:", form.formState.dirtyFields);
+    console.log("Form isDirty:", form.formState.isDirty);
+    console.log("Changed values:", changedValues);
+
+    if (Object.keys(changedValues).length <= 0) {
+      toast.info("No changes made");
+      setUpdatingSections((prev) => ({ ...prev, [sectionKey]: false }));
+      return;
+    }
+
+    const cleanedValues = cleanPayload(changedValues);
+
+    console.log("Cleaned payload:", cleanedValues);
+
+    // Handle theme change - apply after successful save
+    const themeValue = cleanedValues.theme;
+
+    // Call the update settings mutation
+
+    console.log({ sectionKey: cleanedValues });
+
+    switch (sectionKey) {
+      case "preferences":
+        updateSettings({ preferences: cleanedValues, notifications: {} });
+        break;
+      case "notifications":
+        updateSettings({ notifications: cleanedValues, preferences: {} });
+        break;
+
+      default:
+        break;
+    }
+
+    setUpdatingSections((prev) => ({ ...prev, [sectionKey]: false }));
+    setEditingSection(null);
+  };
+
+  // Cancel handler
+  const handleCancel = (sectionKey: string) => {
+    const formMap: Record<string, { form: any }> = {
+      preferences: { form: preferencesForm },
+      notifications: { form: notificationsForm },
+    };
+
+    const selected = formMap[sectionKey];
+    if (!selected) return;
+
+    const { form } = selected;
+
+    // Reset form to default values
+    form.reset();
+    switch (sectionKey) {
+      case "preferences":
+        preferencesForm.reset();
+        const previousTheme = form.formState.defaultValues?.theme;
+        if (previousTheme) {
+          setTheme(previousTheme);
+        }
+        break;
+      case "notifications":
+        notificationsForm.reset();
+        break;
+    }
+    setEditingSection(null);
+  };
+
+  const isPreferencesEditing = editingSection === "preferences";
+  const isNotificationsEditing = editingSection === "notifications";
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold text-foreground">Settings</h2>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const emailActive = notificationsForm.watch("email.isActive");
+  const smsActive = notificationsForm.watch("sms.isActive");
+  const inAppActive = notificationsForm.watch("inApp.isActive");
 
   return (
     <div className="space-y-6">
@@ -145,12 +330,11 @@ export function SettingsSection() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Appearance Settings */}
         <Card className="bg-card border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <Settings className="h-5 w-5" />
-              Appearance
-            </CardTitle>
-          </CardHeader>
+          <SectionHeader
+            title="Appearance"
+            icon={Settings}
+            sectionKey="preferences"
+          />
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div>
@@ -158,116 +342,150 @@ export function SettingsSection() {
                 <p className="text-sm text-muted-foreground mb-3">
                   Choose your preferred theme
                 </p>
-                <div className="grid grid-cols-3 gap-3">
-                  <Button
-                    variant={theme === "light" ? "default" : "outline"}
-                    onClick={() => setTheme("light")}
-                    className="flex items-center gap-2 h-auto p-3"
-                  >
-                    <Sun className="h-4 w-4" />
-                    <span className="text-sm">Light</span>
-                  </Button>
-                  <Button
-                    variant={theme === "dark" ? "default" : "outline"}
-                    onClick={() => setTheme("dark")}
-                    className="flex items-center gap-2 h-auto p-3"
-                  >
-                    <Moon className="h-4 w-4" />
-                    <span className="text-sm">Dark</span>
-                  </Button>
-                  <Button
-                    variant={theme === "system" ? "default" : "outline"}
-                    onClick={() => setTheme("system")}
-                    className="flex items-center gap-2 h-auto p-3"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span className="text-sm">System</span>
-                  </Button>
-                </div>
+                <Controller
+                  name="theme"
+                  control={preferencesForm.control}
+                  render={({ field }) => (
+                    <div className="grid grid-cols-3 gap-3">
+                      <Button
+                        type="button"
+                        variant={
+                          field.value === "light" ? "default" : "outline"
+                        }
+                        onClick={() => {
+                          if (field.value !== "light") {
+                            field.onChange("light");
+                            setTheme("light");
+                          }
+                        }}
+                        disabled={!isPreferencesEditing}
+                        aria-pressed={field.value === "light"}
+                        className="flex items-center gap-2 h-auto p-3"
+                      >
+                        <Sun className="h-4 w-4" />
+                        <span className="text-sm">Light</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={field.value === "dark" ? "default" : "outline"}
+                        onClick={() => {
+                          if (field.value !== "dark") {
+                            field.onChange("dark");
+                            setTheme("dark");
+                          }
+                        }}
+                        disabled={!isPreferencesEditing}
+                        aria-pressed={field.value === "dark"}
+                        className="flex items-center gap-2 h-auto p-3"
+                      >
+                        <Moon className="h-4 w-4" />
+                        <span className="text-sm">Dark</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={
+                          field.value === "system" ? "default" : "outline"
+                        }
+                        onClick={() => {
+                          if (field.value !== "system") {
+                            field.onChange("system");
+                            setTheme("system");
+                          }
+                        }}
+                        disabled={!isPreferencesEditing}
+                        aria-pressed={field.value === "system"}
+                        className="flex items-center gap-2 h-auto p-3"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span className="text-sm">System</span>
+                      </Button>
+                    </div>
+                  )}
+                />
+                {preferencesForm.formState.errors.theme && (
+                  <p className="text-sm text-destructive mt-1">
+                    {preferencesForm.formState.errors.theme.message}
+                  </p>
+                )}
               </div>
 
               <Separator />
 
               <div className="space-y-3">
                 <Label className="text-base font-medium">
-                  Language & Region
+                  Currency & Region
                 </Label>
                 <div className="grid gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="language" className="text-sm">
-                      Language
-                    </Label>
-                    <Select
-                      value={preferences.language}
-                      onValueChange={(value) =>
-                        handlePreferenceChange("language", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
-                        <SelectItem value="de">Deutsch</SelectItem>
-                        <SelectItem value="pt">Português</SelectItem>
-                        <SelectItem value="ar">العربية</SelectItem>
-                        <SelectItem value="zh">中文</SelectItem>
-                        <SelectItem value="ja">日本語</SelectItem>
-                        <SelectItem value="hi">हिन्दी</SelectItem>
-                        <SelectItem value="sw">Kiswahili</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="timezone" className="text-sm">
                       Timezone
                     </Label>
-                    <Select
-                      value={preferences.timezone}
-                      onValueChange={(value) =>
-                        handlePreferenceChange("timezone", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {timezones.map((timezone) => (
-                          <SelectItem
-                            key={timezone.value}
-                            value={timezone.value}
-                          >
-                            {timezone.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="timezone"
+                      control={preferencesForm.control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={!isPreferencesEditing}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {timezones.map((timezone) => (
+                              <SelectItem
+                                key={timezone.value}
+                                value={timezone.value}
+                              >
+                                {timezone.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {preferencesForm.formState.errors.timezone && (
+                      <p className="text-sm text-destructive mt-1">
+                        {preferencesForm.formState.errors.timezone.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="currency" className="text-sm">
                       Currency
                     </Label>
-                    <Select
-                      value={preferences.currency}
-                      onValueChange={(value) =>
-                        handlePreferenceChange("currency", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {currencies.map((currency) => (
-                          <SelectItem key={currency.code} value={currency.code}>
-                            {currency.name} ({currency.symbol})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="currency"
+                      control={preferencesForm.control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={field.onChange}
+                          disabled={!isPreferencesEditing}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            {currencies.map((currency) => (
+                              <SelectItem
+                                key={currency.code}
+                                value={currency.code}
+                              >
+                                {currency.name} ({currency.symbol})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {preferencesForm.formState.errors.currency && (
+                      <p className="text-sm text-destructive mt-1">
+                        {preferencesForm.formState.errors.currency.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -277,12 +495,11 @@ export function SettingsSection() {
 
         {/* Notification Settings */}
         <Card className="bg-card border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-card-foreground">
-              <Bell className="h-5 w-5" />
-              Notifications
-            </CardTitle>
-          </CardHeader>
+          <SectionHeader
+            title="Notifications"
+            icon={Bell}
+            sectionKey="notifications"
+          />
           <CardContent className="space-y-6">
             {/* Email Notifications */}
             <div className="space-y-4">
@@ -296,16 +513,32 @@ export function SettingsSection() {
                     Email Notifications
                   </Label>
                 </div>
-                <Switch
-                  id="email-active"
-                  checked={notifications.email.active}
-                  onCheckedChange={(checked) =>
-                    handleNotificationChange("email", "active", checked)
-                  }
+                <Controller
+                  name="email.isActive"
+                  control={notificationsForm.control}
+                  render={({ field }) => (
+                    <Switch
+                      id="email-active"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!isNotificationsEditing}
+                    />
+                  )}
                 />
               </div>
 
-              <div className="space-y-3 ml-6">
+              <div
+                className={cn(
+                  "space-y-3 ml-6 transition-all duration-200",
+                  !emailActive && "opacity-50 pointer-events-none"
+                )}
+              >
+                {!emailActive && (
+                  <p className="text-xs text-muted-foreground italic mb-2">
+                    Enable email notifications to customize which types you
+                    receive.
+                  </p>
+                )}
                 <div className="flex items-center justify-between">
                   <div>
                     <Label
@@ -318,16 +551,17 @@ export function SettingsSection() {
                       Important updates and news
                     </p>
                   </div>
-                  <Switch
-                    id="email-announcements"
-                    checked={notifications.email.announcements}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange(
-                        "email",
-                        "announcements",
-                        checked
-                      )
-                    }
+                  <Controller
+                    name="email.companyAnnouncements"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="email-announcements"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -339,12 +573,17 @@ export function SettingsSection() {
                       New team members and achievements
                     </p>
                   </div>
-                  <Switch
-                    id="email-team"
-                    checked={notifications.email.teamUpdates}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("email", "teamUpdates", checked)
-                    }
+                  <Controller
+                    name="email.teamUpdates"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="email-team"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -359,16 +598,17 @@ export function SettingsSection() {
                       Commission payments and withdrawals
                     </p>
                   </div>
-                  <Switch
-                    id="email-payments"
-                    checked={notifications.email.paymentAlerts}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange(
-                        "email",
-                        "paymentAlerts",
-                        checked
-                      )
-                    }
+                  <Controller
+                    name="email.paymentAlerts"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="email-payments"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -383,16 +623,17 @@ export function SettingsSection() {
                       Promotional content and tips
                     </p>
                   </div>
-                  <Switch
-                    id="email-marketing"
-                    checked={notifications.email.marketingEmails}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange(
-                        "email",
-                        "marketingEmails",
-                        checked
-                      )
-                    }
+                  <Controller
+                    name="email.marketingEmails"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="email-marketing"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
               </div>
@@ -409,16 +650,32 @@ export function SettingsSection() {
                     SMS Notifications
                   </Label>
                 </div>
-                <Switch
-                  id="sms-active"
-                  checked={notifications.sms.active}
-                  onCheckedChange={(checked) =>
-                    handleNotificationChange("sms", "active", checked)
-                  }
+                <Controller
+                  name="sms.isActive"
+                  control={notificationsForm.control}
+                  render={({ field }) => (
+                    <Switch
+                      id="sms-active"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={!isNotificationsEditing}
+                    />
+                  )}
                 />
               </div>
 
-              <div className="space-y-3 ml-6">
+              <div
+                className={cn(
+                  "space-y-3 ml-6 transition-all duration-200",
+                  !smsActive && "opacity-50 pointer-events-none"
+                )}
+              >
+                {!smsActive && (
+                  <p className="text-xs text-muted-foreground italic mb-2">
+                    Enable SMS notifications to customize which alerts you
+                    receive.
+                  </p>
+                )}
                 <div className="flex items-center justify-between">
                   <div>
                     <Label
@@ -431,12 +688,17 @@ export function SettingsSection() {
                       Instant payment notifications
                     </p>
                   </div>
-                  <Switch
-                    id="sms-payments"
-                    checked={notifications.sms.paymentAlerts}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("sms", "paymentAlerts", checked)
-                    }
+                  <Controller
+                    name="sms.paymentAlerts"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="sms-payments"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -448,12 +710,17 @@ export function SettingsSection() {
                       Critical account notifications
                     </p>
                   </div>
-                  <Switch
-                    id="sms-urgent"
-                    checked={notifications.sms.urgentUpdates}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("sms", "urgentUpdates", checked)
-                    }
+                  <Controller
+                    name="sms.urgentUpdates"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="sms-urgent"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
               </div>
@@ -473,16 +740,34 @@ export function SettingsSection() {
                     In-App Notifications
                   </Label>
                 </div>
-                <Switch
-                  id="in-app-active"
-                  checked={notifications.inApp.active}
-                  onCheckedChange={(checked) =>
-                    handleNotificationChange("inApp", "active", checked)
-                  }
+                <Controller
+                  name="inApp.isActive"
+                  control={notificationsForm.control}
+                  render={({ field }) => {
+                    console.log(field, "inapp");
+                    return (
+                      <Switch
+                        id="in-app-active"
+                        checked={!!field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    );
+                  }}
                 />
               </div>
 
-              <div className="space-y-3 ml-6">
+              <div
+                className={cn(
+                  "space-y-3 ml-6 transition-all duration-200",
+                  !inAppActive && "opacity-50 pointer-events-none"
+                )}
+              >
+                {!inAppActive && (
+                  <p className="text-xs text-muted-foreground italic mb-2">
+                    Enable in-app notifications to customize your alerts.
+                  </p>
+                )}
                 <div className="flex items-center justify-between">
                   <div>
                     <Label htmlFor="app-all" className="text-sm font-medium">
@@ -492,16 +777,17 @@ export function SettingsSection() {
                       Show all in-app notifications
                     </p>
                   </div>
-                  <Switch
-                    id="app-all"
-                    checked={notifications.inApp.allNotifications}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange(
-                        "inApp",
-                        "allNotifications",
-                        checked
-                      )
-                    }
+                  <Controller
+                    name="inApp.allNotifications"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="app-all"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -513,12 +799,17 @@ export function SettingsSection() {
                       Play sound for notifications
                     </p>
                   </div>
-                  <Switch
-                    id="app-sounds"
-                    checked={notifications.inApp.sounds}
-                    onCheckedChange={(checked) =>
-                      handleNotificationChange("inApp", "sounds", checked)
-                    }
+                  <Controller
+                    name="inApp.notificationSounds"
+                    control={notificationsForm.control}
+                    render={({ field }) => (
+                      <Switch
+                        id="app-sounds"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={!isNotificationsEditing}
+                      />
+                    )}
                   />
                 </div>
               </div>
@@ -545,30 +836,6 @@ export function SettingsSection() {
             </div>
             <Button variant="outline">Change Password</Button>
           </div>
-
-          <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-            <div>
-              <h4 className="font-medium text-card-foreground">
-                Two-Factor Authentication
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Add an extra layer of security to your account
-              </p>
-            </div>
-            <Button variant="outline">Enable 2FA</Button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-            <div>
-              <h4 className="font-medium text-card-foreground">
-                Login Sessions
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Manage your active login sessions
-              </p>
-            </div>
-            <Button variant="outline">View Sessions</Button>
-          </div>
         </CardContent>
       </Card>
 
@@ -581,31 +848,6 @@ export function SettingsSection() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-            <div>
-              <h4 className="font-medium text-card-foreground">Export Data</h4>
-              <p className="text-sm text-muted-foreground">
-                Download a copy of your account data
-              </p>
-            </div>
-            <Button variant="outline" className="gap-2 bg-transparent">
-              <Download className="h-4 w-4" />
-              Export
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-            <div>
-              <h4 className="font-medium text-card-foreground">
-                Data Retention
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Manage how long we keep your data
-              </p>
-            </div>
-            <Button variant="outline">Manage</Button>
-          </div>
-
           <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
             <div>
               <h4 className="font-medium text-destructive flex items-center gap-2">

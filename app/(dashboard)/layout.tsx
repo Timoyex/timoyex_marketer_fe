@@ -5,10 +5,10 @@ import { Header } from "@/components/custom/header";
 import { Sidebar } from "@/components/custom/sidebar";
 import { Breadcrumb } from "./components/breadcrumb";
 import { ThemeProvider } from "@/components/custom/theme-provider";
-import { AuthGuard } from "@/guards/auth.guard";
 import { VerifyGuard } from "@/guards";
 import clsx from "clsx";
-import { useUIStore } from "@/lib/stores";
+import { useSettingsStore, useUIStore } from "@/lib/stores";
+import { NotificationsProvider } from "@/hooks/notification.ws";
 
 export default function DashboardLayout({
   children,
@@ -19,16 +19,17 @@ export default function DashboardLayout({
     sidebarCollapsed, //desktop
   } = useUIStore();
 
+  const { preferences } = useSettingsStore();
+
   return (
     <div className="min-h-screen bg-background">
+      <NotificationsProvider />
       <Header />
       {/* this sidebar is collapsible */}
       <Sidebar />
 
       {/* Main content */}
-      {/* Todo
-      add themes based on user preference
-      */}
+
       <main
         className={clsx(
           "transition-all duration-300",
@@ -38,16 +39,15 @@ export default function DashboardLayout({
         <div className="p-4 lg:p-6">
           <ThemeProvider
             attribute="class"
-            defaultTheme="light"
-            enableSystem
+            defaultTheme={preferences?.theme || "system"}
             disableTransitionOnChange
+            enableColorScheme
+            enableSystem
           >
-            <AuthGuard>
-              <VerifyGuard>
-                <Breadcrumb />
-                {children}
-              </VerifyGuard>
-            </AuthGuard>
+            <VerifyGuard>
+              <Breadcrumb />
+              {children}
+            </VerifyGuard>
           </ThemeProvider>
         </div>
       </main>
