@@ -53,8 +53,8 @@ export function Header() {
     allRead();
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/login");
   };
 

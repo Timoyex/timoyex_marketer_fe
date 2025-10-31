@@ -39,6 +39,8 @@ import { useSettings } from "@/hooks/settings.hook";
 import { toast } from "sonner";
 import { NotificationSettings, Preferences } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { DialogContainer } from "@/components/custom/dialog-container";
+import { ChangePasswordModal } from "@/app/(auth)/components/change-password";
 
 const currencyCode = currencies.map((c) => c.code);
 const zones = timezones.map((t) => t.value);
@@ -834,7 +836,14 @@ export function SettingsSection() {
                 Last updated 3 months ago
               </p>
             </div>
-            <Button variant="outline">Change Password</Button>
+            <DialogContainer
+              title="Change password"
+              desc=" Update your account password"
+              dialogComp={<ChangePasswordModal />}
+              // dialogComp={<p>hello.</p>}
+            >
+              <Button variant="outline">Change Password</Button>
+            </DialogContainer>
           </div>
         </CardContent>
       </Card>

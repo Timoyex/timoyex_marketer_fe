@@ -54,8 +54,8 @@ export function Sidebar() {
     setSidebarOpen(false);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/login");
   };
 

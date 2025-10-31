@@ -23,7 +23,7 @@ export function useAuth() {
   const { setPreferences } = useSettingsStore();
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: authApi.login, //actually an await function
+    mutationFn: authApi.login,
     onMutate: () => {
       setLoading(true);
     },
@@ -150,6 +150,41 @@ export function useAuth() {
     },
   });
 
+  // Forgot Password Mutation
+  const forgotPwdMutation = useMutation({
+    mutationFn: authApi.forgotPassword,
+    onSuccess: () => {
+      toast.success("Reset Link Sent");
+    },
+    onError: (err: any) => {
+      toast.error("Failed to send reset link. Please try again.");
+      return err?.response?.data;
+    },
+  });
+
+  // Reset Pwd Mutation
+  const resetPwdMutation = useMutation({
+    mutationFn: authApi.resetPassword,
+    onSuccess: () => {
+      toast.success("Password has been reset");
+    },
+    onError: (error: any) => {
+      toast.error("Failed to reset password. Please try again.");
+    },
+  });
+
+  // Change Pwd Mutation
+
+  const changePwdMutation = useMutation({
+    mutationFn: authApi.changePassword,
+    onSuccess: () => {
+      toast.success("Password has been changed");
+    },
+    onError: (error: any) => {
+      toast.error("Failed to change password. Please try again in a while.");
+    },
+  });
+
   return {
     user,
     isAuthenticated,
@@ -161,6 +196,11 @@ export function useAuth() {
     refresh: (data: string) => refreshMutation.mutateAsync(data),
     verify: (data: { token: string }) => verifyMutation.mutateAsync(data),
     logout: () => logoutMutation.mutateAsync(refresh_token || undefined),
+    forgotPwd: (email: string) => forgotPwdMutation.mutateAsync(email),
+    resetPwd: (data: { token: string; password: string }) =>
+      resetPwdMutation.mutateAsync(data),
+    changePwd: (data: { oldPwd: string; newPwd: string }) =>
+      changePwdMutation.mutateAsync(data),
 
     // States
     loginError: loginMutation.error,
@@ -170,5 +210,13 @@ export function useAuth() {
     verifyError: verifyMutation?.error?.response?.data?.message,
     isVerifyPending: verifyMutation.isPending,
     verifySuccess: verifyMutation.isSuccess,
+    forgotPwdSuccess: forgotPwdMutation.isSuccess,
+    forgotPwdError: forgotPwdMutation.error,
+    forgotPwdReset: forgotPwdMutation.reset,
+    resetPwdSuccess: resetPwdMutation.isSuccess,
+    resetPwdError: resetPwdMutation.error,
+    changePwdSuccess: changePwdMutation.isSuccess,
+    changePwdError: changePwdMutation.error,
+    changePwdReset: changePwdMutation.reset,
   };
 }
