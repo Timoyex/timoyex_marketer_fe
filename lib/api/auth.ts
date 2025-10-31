@@ -1,3 +1,5 @@
+"use client";
+
 import { EndpointResponse } from "../stores";
 import { UserProfile } from "../stores/profile.store";
 import { apiClient } from "./client";

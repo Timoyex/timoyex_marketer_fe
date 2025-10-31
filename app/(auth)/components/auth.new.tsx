@@ -12,6 +12,8 @@ import {
   Layers2,
   ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,8 +38,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import Link from "next/link";
-import Image from "next/image";
 
 // Schemas
 export const loginSchema = z.object({
@@ -167,16 +167,13 @@ export default function AuthPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="mb-6">
-              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-500 to-green-700 rounded-xl shadow-lg flex items-center justify-center text-white text-2xl font-bold">
-                {/* TI */}
-                <Image
-                  src="/timoyex-logo.jpg"
-                  alt="TIMOYEX INTERNATIONAL"
-                  width={80}
-                  height={80}
-                  className="mx-auto rounded-xl shadow-lg"
-                />
-              </div>
+              <Image
+                src="/timoyex-logo.jpg"
+                alt="TIMOYEX INTERNATIONAL"
+                width={100}
+                height={100}
+                className="mx-auto rounded-xl shadow-lg"
+              />
             </div>
             {activeTab === "admin" ? (
               <>

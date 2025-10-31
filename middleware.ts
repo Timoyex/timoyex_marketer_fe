@@ -44,15 +44,22 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// export const config = {
+//   matcher: [
+//     /*
+//      * Match all request paths except:
+//      * - api (API routes)
+//      * - _next/static (static files)
+//      * - _next/image (image optimization files)
+//      * - favicon.ico, sitemap.xml, robots.txt
+//      */
+//     "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+//   ],
+// };
+
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, sitemap.xml, robots.txt
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    // Only match app routes, not static files
+    "/((?!_next|api|favicon.ico|sitemap.xml|robots.txt|[^/]+\\.[^/]+$).*)",
   ],
 };

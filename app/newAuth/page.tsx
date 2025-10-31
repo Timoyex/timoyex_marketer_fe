@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useState } from "react";
-import { Eye, EyeOff, ArrowLeft, Shield } from "lucide-react";
+import { Eye, EyeOff, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
