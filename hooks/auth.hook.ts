@@ -43,9 +43,14 @@ export function useAuth() {
       data.data.preferences && setPreferences(data.data.preferences);
       if (data.data.role === "admin") {
         toast.success("Welcome Admin!");
-      } else {
-        toast.success("Welcome back!");
+
+        setTimeout(() => {
+          console.log("logen in");
+        }, 3000);
+
+        return router.push("/admin/dashboard");
       }
+      toast.success("Welcome back!");
 
       setTimeout(() => {
         console.log("logen in");
