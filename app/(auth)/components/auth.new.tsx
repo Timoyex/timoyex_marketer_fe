@@ -126,8 +126,7 @@ export default function AuthPage() {
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
-      console.log(values);
-      login(values);
+      await login(values);
     } catch (error) {
       toast.error("Login failed. Please try again.");
       loginForm.setError("root", {
@@ -139,7 +138,8 @@ export default function AuthPage() {
   const handleRegister = async (payload: z.infer<typeof registerSchema>) => {
     try {
       const { confirmPassword, agreeToTerms, ...values } = payload;
-      register(values);
+
+      await register(values);
       localStorage.setItem("verification-email", values.email);
     } catch (error) {
       toast.error("Registration failed. Please try again.");
@@ -253,7 +253,7 @@ export default function AuthPage() {
 
                   <div>
                     {loginForm.formState.errors.root && (
-                      <Alert className="border-red-200 bg-red-50">
+                      <Alert className="border-red-200 bg-red-50 mb-7 mt-2 p-4">
                         <AlertDescription className="text-red-700">
                           {loginForm.formState.errors.root.message}
                         </AlertDescription>
@@ -264,7 +264,7 @@ export default function AuthPage() {
                       control={loginForm.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel>Email</FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -285,7 +285,7 @@ export default function AuthPage() {
                       control={loginForm.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel>Password</FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -343,7 +343,6 @@ export default function AuthPage() {
                       type="submit"
                       disabled={loginForm.formState.isSubmitting}
                       className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium"
-                      // className="w-full"
                     >
                       {loginForm.formState.isSubmitting ? (
                         <div className="flex items-center">
@@ -392,7 +391,7 @@ export default function AuthPage() {
                         control={registerForm.control}
                         name="firstName"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="mb-4 gap-1">
                             <FormLabel>First Name</FormLabel>
                             <FormControl>
                               <div className="relative">
@@ -413,7 +412,7 @@ export default function AuthPage() {
                         control={registerForm.control}
                         name="lastName"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="mb-4 gap-1">
                             <FormLabel>Last Name</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="Doe" />
@@ -428,7 +427,7 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel>Email</FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -450,7 +449,7 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="memberOf"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel>Upline Code</FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -471,7 +470,7 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="phone"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -493,7 +492,7 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel>Password</FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -526,7 +525,7 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="confirmPassword"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel>Confirm Password</FormLabel>
                           <FormControl>
                             <div className="relative">
@@ -561,7 +560,7 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="agreeToTerms"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <div className="flex items-center space-x-2 justify-center">
                             <Checkbox
                               checked={field.value}
@@ -631,7 +630,7 @@ export default function AuthPage() {
                       control={adminLoginForm.control}
                       name="email"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel className="block text-sm font-medium text-slate-300 mb-2">
                             Adminstrator Email
                           </FormLabel>
@@ -655,7 +654,7 @@ export default function AuthPage() {
                       control={adminLoginForm.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="mb-4 gap-1">
                           <FormLabel className="block text-sm font-medium text-slate-300 mb-2">
                             Password
                           </FormLabel>
@@ -708,7 +707,7 @@ export default function AuthPage() {
                           </div> */}
                           <Link
                             href="/forgot-password"
-                            className="text-sm text-blue-600 hover:text-blue-700"
+                            className="text-sm text-red-400 hover:text-red-300 transition-colors"
                           >
                             Forgot password?
                           </Link>

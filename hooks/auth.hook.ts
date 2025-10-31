@@ -23,7 +23,7 @@ export function useAuth() {
   const { setPreferences } = useSettingsStore();
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: authApi.login,
+    mutationFn: authApi.login, //actually an await function
     onMutate: () => {
       setLoading(true);
     },
@@ -156,11 +156,11 @@ export function useAuth() {
     isLoading: loginMutation.isPending || registerMutation.isPending,
 
     // Actions
-    login: (data: LoginRequest) => loginMutation.mutate(data),
-    register: (data: RegisterRequest) => registerMutation.mutate(data),
-    refresh: (data: string) => refreshMutation.mutate(data),
-    verify: (data: { token: string }) => verifyMutation.mutate(data),
-    logout: () => logoutMutation.mutate(refresh_token || undefined),
+    login: (data: LoginRequest) => loginMutation.mutateAsync(data),
+    register: (data: RegisterRequest) => registerMutation.mutateAsync(data),
+    refresh: (data: string) => refreshMutation.mutateAsync(data),
+    verify: (data: { token: string }) => verifyMutation.mutateAsync(data),
+    logout: () => logoutMutation.mutateAsync(refresh_token || undefined),
 
     // States
     loginError: loginMutation.error,
