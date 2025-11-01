@@ -27,7 +27,7 @@ export function useAuth() {
     onMutate: () => {
       setLoading(true);
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       login({
         user: {
           sub: data.data.sub,
@@ -41,7 +41,7 @@ export function useAuth() {
       });
 
       data.data.preferences && setPreferences(data.data.preferences);
-      if (data.data.role === "admin") {
+      if (variables.isAdmin) {
         toast.success("Welcome Admin!");
 
         setTimeout(() => {
