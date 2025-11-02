@@ -24,11 +24,16 @@ export function middleware(request: NextRequest) {
     "/register",
     "/verify",
     "/verify-email",
-    "/admin",
     "/newAuth",
+    "/forgot-password",
+    "/reset-password",
   ];
 
-  const isAuthPage = authPages.some((page) => pathname.startsWith(page));
+  // Check if it's the admin LOGIN page (not dashboard or other admin routes)
+  const isAdminLoginPage = pathname === "/admin";
+  const isAuthPage =
+    authPages.some((page) => pathname.startsWith(page)) || isAdminLoginPage;
+
   const isPublicPage = pathname === "/";
   const isProtectedPage = !isPublicPage && !isAuthPage;
 
@@ -43,6 +48,11 @@ export function middleware(request: NextRequest) {
   // Redirect unauthenticated users to login
   if (isProtectedPage && !accessToken && !refreshToken) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Optional: Add admin role check for admin routes
+  if (pathname.startsWith("/admin/") && role !== "admin") {
+    return NextResponse.redirect(new URL("/overview", request.url));
   }
 
   return NextResponse.next();
