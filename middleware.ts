@@ -17,6 +17,7 @@ export function middleware(request: NextRequest) {
   // Auth checks
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
+  const role = request.cookies.get("role")?.value;
 
   const authPages = [
     "/login",
@@ -33,6 +34,9 @@ export function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (isAuthPage && (accessToken || refreshToken)) {
+    if (role && role === "admin") {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    }
     return NextResponse.redirect(new URL("/overview", request.url));
   }
 

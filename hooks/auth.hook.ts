@@ -27,7 +27,7 @@ export function useAuth() {
     onMutate: () => {
       setLoading(true);
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       login({
         user: {
           sub: data.data.sub,
@@ -41,7 +41,7 @@ export function useAuth() {
       });
 
       data.data.preferences && setPreferences(data.data.preferences);
-      if (variables.isAdmin) {
+      if (data.data.role === "admin") {
         toast.success("Welcome Admin!");
 
         setTimeout(() => {
@@ -146,12 +146,12 @@ export function useAuth() {
     onSuccess: () => {
       logout();
       toast.success("Logged out successfully");
-      router.push("/login");
+      return router.push("/login");
     },
     onError: () => {
       // Still logout locally even if API call fails
       logout();
-      router.push("/login");
+      return router.push("/login");
     },
   });
 
