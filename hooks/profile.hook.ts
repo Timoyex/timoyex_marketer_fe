@@ -57,20 +57,6 @@ export function useProfile() {
     },
   });
 
-  // Update profile mutation
-  const deleteProfileMutation = useMutation({
-    mutationFn: profileApi.delete,
-    onMutate: () => toast.success("Account Deletion Request Sent"),
-    onSuccess: () => {
-      toast.success("Account deletion in progress");
-    },
-    onError: (error: any) => {
-      toast.error(
-        "Failed to start deletion process. Please try again in a while."
-      );
-    },
-  });
-
   return {
     // Data
     profile,
@@ -81,7 +67,7 @@ export function useProfile() {
     // Actions
     updateProfile: (data: Partial<UserProfile>, hasImage?: boolean) =>
       updateProfileMutation.mutate({ data, hasImage }),
-    deleteProfile: (id: string) => deleteProfileMutation.mutateAsync(id),
+
     refetchProfile: profileQuery.refetch,
 
     // States
@@ -91,9 +77,5 @@ export function useProfile() {
     // Errors
     getError: profileQuery.error,
     updateError: updateProfileMutation.error,
-
-    deleteProfileSuccess: deleteProfileMutation.isSuccess,
-    deleteProfileError: deleteProfileMutation.error,
-    deleteProfileLoading: deleteProfileMutation.isPending,
   };
 }

@@ -55,4 +55,10 @@ export const usersApi = {
     const response = await apiClient.patch(`/v1/admin/users/${id}`, data);
     return response.data;
   },
+
+  // Delete
+  delete: async (id: string): Promise<any> => {
+    const response = await apiClient.patch(`/v1/admin/users/${id}/delete`);
+    return response.data;
+  },
 };

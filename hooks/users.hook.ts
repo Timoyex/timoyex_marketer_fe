@@ -2,6 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListUsersQuery, UpdateUserRequest, usersApi } from "@/lib/api/users";
 import { toast } from "sonner";
+import { profileApi } from "@/lib/api";
 
 const USERS_QUERY_KEY = ["users"];
 
@@ -43,6 +44,20 @@ export function useUsers(params: ListUsersQuery = {}) {
       return;
     },
   });
+
+  // Update profile mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: usersApi.delete,
+    onMutate: () => toast.success("Account Deletion Request Sent"),
+    onSuccess: () => {
+      toast.success("Account deletion in progress");
+    },
+    onError: (error: any) => {
+      toast.error(
+        "Failed to start deletion process. Please try again in a while."
+      );
+    },
+  });
   return {
     // Queries
     usersQuery,
@@ -51,13 +66,18 @@ export function useUsers(params: ListUsersQuery = {}) {
     // Action
     updateUser: ({ id, dto }: { id: string; dto: UpdateUserRequest }) =>
       updateUserMutation.mutateAsync({ id, data: dto }),
+    deleteUser: (id: string) => deleteUserMutation.mutateAsync(id),
 
     // States
     isUsersLoading: usersQuery.isPending,
     isStatsLoading: statsQuery.isPending,
+    isUserDeleting: deleteUserMutation.isPending,
+
+    isUserDeleted: deleteUserMutation.isSuccess,
 
     // Errors
     userError: usersQuery.error,
     statsError: statsQuery.error,
+    deleteUserError: deleteUserMutation.error,
   };
 }

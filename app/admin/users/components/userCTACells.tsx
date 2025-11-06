@@ -21,11 +21,9 @@ import {
 
 import { UserProfile } from "@/lib/stores/profile.store";
 import { useUsers } from "@/hooks/users.hook";
-import { useProfile } from "@/hooks/profile.hook";
 
 export const UserCTACells = ({ user }: { user: Partial<UserProfile> }) => {
-  const { updateUser } = useUsers();
-  const { deleteProfile } = useProfile();
+  const { updateUser, deleteUser } = useUsers();
 
   const handleSuspend = async () => {
     console.log(user.id);
@@ -34,7 +32,7 @@ export const UserCTACells = ({ user }: { user: Partial<UserProfile> }) => {
   };
   const handleDelete = async () => {
     console.log(user.id);
-    await deleteProfile(user.id!);
+    await deleteUser(user.id!);
     return;
   };
 
