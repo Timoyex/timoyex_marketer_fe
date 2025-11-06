@@ -245,17 +245,6 @@ export function AnnouncementsSection() {
               <h4 className="font-medium text-card-foreground flex-1 min-w-0">
                 {notification.title}
               </h4>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge
-                  variant="outline"
-                  className={getTypeColor(notification.messageType)}
-                >
-                  {notification.type}
-                </Badge>
-                {!notification.isRead && (
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                )}
-              </div>
             </div>
             <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
               {notification.message}
@@ -267,14 +256,26 @@ export function AnnouncementsSection() {
               </span>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
+
+          <div className="flex flex-col items-end gap-2 flex-shrink-0">
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Badge
-                variant="outline"
-                className={getPriorityColor(notification.priority)}
-              >
-                {notification.priority}
-              </Badge>
+              {notification.type === "info" && (
+                <Badge
+                  variant="outline"
+                  className={getTypeColor(notification.messageType)}
+                >
+                  {notification.messageType || "action"}
+                </Badge>
+              )}
+
+              {notification.type === "general" && (
+                <Badge
+                  variant="outline"
+                  className={getPriorityColor(notification.priority)}
+                >
+                  {notification.priority}
+                </Badge>
+              )}
               {!notification.isRead && (
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
               )}

@@ -1,4 +1,5 @@
 import { EndpointResponse, ListQuery } from "../stores";
+import { BankAccount } from "../stores/profile.store";
 
 import { apiClient } from "./client";
 
@@ -7,6 +8,7 @@ type PaymentStatus =
   | "processing"
   | "completed"
   | "failed"
+  | "rejected"
   | "cancelled";
 
 export interface PaymentsEntity {
@@ -18,6 +20,8 @@ export interface PaymentsEntity {
   description: string;
   createdAt: Date;
   processedAt?: string | Date | null;
+  earningType?: string;
+  note?: string;
 }
 export interface WithdrawalEntity {
   id: string;
@@ -41,6 +45,57 @@ export interface PaymentsHistoryResponse extends EndpointResponse {
 export interface WithdrawalResponse extends EndpointResponse {
   data: WithdrawalEntity;
 }
+
+export interface PaymentsStats {
+  total: number;
+  totalAmount: number;
+  byStatus: {
+    pending: { count: number; amount: number };
+    processing: { count: number; amount: number };
+    completed: { count: number; amount: number };
+    failed: { count: number; amount: number };
+    rejected: { count: number; amount: number };
+    cancelled: { count: number; amount: number };
+  };
+  today: {
+    processing: number;
+    rejected: number;
+  };
+}
+
+export interface PaymentsStatsResponse extends EndpointResponse {
+  data: PaymentsStats;
+}
+export interface AdminPaymentsList {
+  id: string;
+  amount: number;
+  type: string;
+  status: string;
+  createdAt: string;
+  userId: string;
+  earningType: "direct_sales" | "team_commission";
+  description?: string;
+  note?: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    level: 0;
+    bankAccount?: BankAccount | undefined;
+    createdAt: string;
+  };
+}
+
+export interface AdminPaymentsListResponse extends EndpointResponse {
+  data: {
+    payments: Array<AdminPaymentsList>;
+    nextCursor?: string | null;
+    prevCursor?: string | null;
+    count: number;
+    total: number;
+    hasMore?: boolean;
+  };
+}
 export interface PaymentsFilter extends ListQuery {
   status?: PaymentStatus;
 }
@@ -59,6 +114,35 @@ export const paymentsApi = {
     params?: PaymentsFilter
   ): Promise<PaymentsHistoryResponse> => {
     const response = await apiClient.get(`/v1/payments/history`, { params });
+    return response.data;
+  },
+
+  /***************         Admin Endpoints         ***********************/
+
+  // list payments
+  list: async (params?: PaymentsFilter): Promise<AdminPaymentsListResponse> => {
+    const response = await apiClient.get(`/v1/admin/payments`, { params });
+    return response.data;
+  },
+
+  //  stats
+
+  stats: async (): Promise<PaymentsStatsResponse> => {
+    const response = await apiClient.get(`/v1/admin/payments/stats`);
+    return response.data;
+  },
+
+  update: async ({
+    id,
+    data,
+  }: {
+    id: string;
+    data: Partial<PaymentsEntity>;
+  }): Promise<string> => {
+    const response = await apiClient.patch(
+      `/v1/admin/payments/${id}/update`,
+      data
+    );
     return response.data;
   },
 };

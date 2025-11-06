@@ -39,10 +39,8 @@ export function middleware(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (isAuthPage && (accessToken || refreshToken)) {
-    if (role && role === "admin") {
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-    }
-    return NextResponse.redirect(new URL("/overview", request.url));
+    const redirectUrl = role === "admin" ? "/admin/dashboard" : "/overview";
+    return NextResponse.redirect(new URL(redirectUrl, request.url));
   }
 
   // Redirect unauthenticated users to login

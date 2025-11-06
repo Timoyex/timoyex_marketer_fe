@@ -10,7 +10,7 @@ import {
 
 export const DialogContainer = ({
   title,
-  desc,
+  desc = "",
   children,
   dialogComp,
 }: {
@@ -24,12 +24,14 @@ export const DialogContainer = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{desc}</DialogDescription>
-        </DialogHeader>
-        {dialogComp}
+      <DialogContent>
+        <>
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{desc}</DialogDescription>
+          </DialogHeader>
+          {dialogComp}
+        </>
       </DialogContent>
     </Dialog>
   );

@@ -849,7 +849,7 @@ export function SettingsSection() {
       </Card>
 
       {/* Data & Privacy */}
-      <Card className="bg-card border-border shadow-sm">
+      {/* <Card className="bg-card border-border shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-card-foreground">
             <Shield className="h-5 w-5" />
@@ -873,7 +873,7 @@ export function SettingsSection() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }

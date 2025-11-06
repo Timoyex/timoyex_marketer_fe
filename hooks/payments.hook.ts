@@ -41,7 +41,7 @@ export function usePayments(params?: PaymentsFilter) {
     paymentHistoryQuery,
 
     // Actions
-    requestWithdrawal: (id: string) => requestPaymentMutation.mutate(id),
+    requestWithdrawal: (id: string) => requestPaymentMutation.mutateAsync(id),
     refetchPayments: paymentHistoryQuery.refetch,
 
     // States

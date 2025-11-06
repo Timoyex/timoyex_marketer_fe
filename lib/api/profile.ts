@@ -23,4 +23,11 @@ export const profileApi = {
     const response = await apiClient.patch("/v1/profile", data);
     return response.data;
   },
+
+  /*********************         Admin Functions        *********************/
+
+  delete: async (id: string): Promise<any> => {
+    const response = await apiClient.patch(`/v1/profile/${id}/delete`);
+    return response.data;
+  },
 };

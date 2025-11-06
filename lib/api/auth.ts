@@ -54,10 +54,24 @@ export const authApi = {
     return response.data;
   },
 
+  // Resend Verify
+
+  resendVerify: async (data: { email: string }): Promise<AuthResponse> => {
+    const response = await apiClient.post("/v1/auth/resend", data);
+    return response.data;
+  },
+
   // Logout
-  logout: async (token?: string): Promise<void> => {
+  logout: async ({
+    token,
+    role,
+  }: {
+    token?: string;
+    role?: string | null;
+  }): Promise<void> => {
     await apiClient.post("/v1/auth/logout", {
       refresh_token: token,
+      isAdmin: role && role === "admin",
     });
   },
 

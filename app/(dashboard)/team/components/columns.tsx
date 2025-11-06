@@ -6,25 +6,12 @@ import {
   Layers,
   Activity,
   UserCircle2,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
-// Types
-export interface TeamMember {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  createdAt: string;
-  level: number;
-  status: string;
-  downline?: number;
-  earnings?: number;
-  marketerCode: string;
-  memberOf: string;
-}
+import { Member } from "@/lib/api/team";
 
 export const EmptyState = () => (
   <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -76,7 +63,7 @@ const filterSelect = <TData,>(
 };
 
 // Column definitions
-export const teamColumns: ColumnDef<TeamMember>[] = [
+export const teamColumns: ColumnDef<Member>[] = [
   {
     accessorKey: "name",
     accessorFn: (row) => {
@@ -181,6 +168,35 @@ export const teamColumns: ColumnDef<TeamMember>[] = [
         <Badge variant={getStatusVariant(status)} className="capitalize">
           {status}
         </Badge>
+      );
+    },
+  },
+  {
+    accessorKey: "members",
+    enableSorting: false,
+
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="hover:bg-transparent p-0 h-auto font-semibold -ml-4"
+        >
+          <Users className="mr-2 h-4 w-4" />
+          Members
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const user = row.original;
+      return (
+        <>
+          <p className="font-medium text-slate-900">
+            {Number(user.totalDownlineCount).toLocaleString()} total
+          </p>
+          <p className="text-sm text-slate-500">
+            {Number(user.directCount).toLocaleString()} direct
+          </p>
+        </>
       );
     },
   },

@@ -80,9 +80,7 @@ const ReferralCodes = ({
                 size="icon"
                 className="flex-1 bg-transparent text-xs sm:text-sm h-8 sm:h-9"
                 onClick={() =>
-                  copyToClipboard(
-                    `https://myapp.com/join/marketer/${referralCodes.marketer}`
-                  )
+                  copyToClipboard(`${url}/join/${referralCodes.marketer}`)
                 }
               >
                 <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -93,11 +91,8 @@ const ReferralCodes = ({
                 className="flex-1 bg-transparent text-xs sm:text-sm h-8 sm:h-9"
                 onClick={() =>
                   navigator.share?.({
-                    text: `https://myapp.com/join/marketer/${referralCodes.marketer}`,
-                  }) ??
-                  copyToClipboard(
-                    `https://myapp.com/join/marketer/${referralCodes.marketer}`
-                  )
+                    text: `${url}/join/${referralCodes.marketer}`,
+                  }) ?? copyToClipboard(`${url}/join/${referralCodes.marketer}`)
                 }
               >
                 <Share2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />

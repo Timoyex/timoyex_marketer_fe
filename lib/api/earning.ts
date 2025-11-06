@@ -1,9 +1,9 @@
-import { EndpointResponse } from "../stores";
+import { EndpointResponse, ListQuery } from "../stores";
 
 import { apiClient } from "./client";
 
 export interface EarningBreakDownEntity {
-  type: string;
+  type: "direct_sales" | "team_commission";
   amount: number;
   count: number;
   percentage: number;
@@ -68,9 +68,7 @@ export interface EarningHistoryResponse extends EndpointResponse {
   };
 }
 
-export interface EarningFilter {
-  startDate?: Date;
-  endDate?: Date;
+export interface EarningFilter extends ListQuery {
   type?: "direct_sales" | "team_commission" | null;
   status?: "pending" | "processing" | "approved" | "paid" | "rejected" | null;
   includeStats?: boolean;

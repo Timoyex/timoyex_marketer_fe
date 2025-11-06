@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
@@ -12,12 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   DollarSign,
   Clock,
-  Download,
   Calendar,
   CreditCard,
   Wallet,
-  ChevronLeft,
-  ChevronRight,
+  BellOff,
 } from "lucide-react";
 import {
   Line,
@@ -31,130 +28,48 @@ import {
   Legend,
 } from "recharts";
 import { InfoCard } from "@/components/custom/infocard";
-import Demo from "@/components/custom/demo";
 import { useEarnings } from "@/hooks/earning.hook";
-import { shuffleArray, snakeToTitleCase } from "@/lib/currency-utils";
+import { snakeToTitleCase } from "@/lib/currency-utils";
 import { usePayments } from "@/hooks/payments.hook";
+import { useCursorPagination } from "@/lib/pagination-fn";
+import { PaginatedTable } from "@/components/custom/dataTable";
+import { EarningHistoryEntity, PaymentsEntity } from "@/lib/api";
+import { getEarningType } from "@/app/admin/dashboard/page";
+import { EarningCard } from "./request-card";
+import { DialogContainer } from "@/components/custom/dialog-container";
 
-const paymentHistory = [
-  {
-    id: 1,
-    date: "2024-03-15",
-    amount: 6720,
-    status: "Completed",
-    method: "Bank Transfer",
-    reference: "PAY-2024-001",
-  },
-  {
-    id: 2,
-    date: "2024-02-15",
-    amount: 6280,
-    status: "Completed",
-    method: "PayPal",
-    reference: "PAY-2024-002",
-  },
-  {
-    id: 3,
-    date: "2024-01-15",
-    amount: 7800,
-    status: "Completed",
-    method: "Bank Transfer",
-    reference: "PAY-2024-003",
-  },
-  {
-    id: 4,
-    date: "2024-04-15",
-    amount: 4420,
-    status: "Processing",
-    method: "Bank Transfer",
-    reference: "PAY-2024-004",
-  },
-  {
-    id: 5,
-    date: "2024-05-15",
-    amount: 5650,
-    status: "Pending",
-    method: "PayPal",
-    reference: "PAY-2024-005",
-  },
-  {
-    id: 6,
-    date: "2024-06-15",
-    amount: 4150,
-    status: "Completed",
-    method: "Bank Transfer",
-    reference: "PAY-2024-006",
-  },
-  {
-    id: 7,
-    date: "2024-07-15",
-    amount: 4680,
-    status: "Completed",
-    method: "PayPal",
-    reference: "PAY-2024-007",
-  },
-  {
-    id: 8,
-    date: "2024-08-15",
-    amount: 5650,
-    status: "Processing",
-    method: "Bank Transfer",
-    reference: "PAY-2024-008",
-  },
-  {
-    id: 9,
-    date: "2024-09-15",
-    amount: 4420,
-    status: "Completed",
-    method: "PayPal",
-    reference: "PAY-2024-009",
-  },
-  {
-    id: 10,
-    date: "2024-10-15",
-    amount: 6720,
-    status: "Pending",
-    method: "Bank Transfer",
-    reference: "PAY-2024-010",
-  },
-];
+const EmptyState = () => (
+  <div className="flex flex-col items-center justify-center py-16 px-4">
+    <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
+      <BellOff className="h-12 w-12 text-muted-foreground" />
+    </div>
+    <h3 className="text-lg font-semibold mb-2">No new payments yet.</h3>
+    <p className="text-muted-foreground text-center max-w-md">
+      You're all caught up! Check back later for new payments requests.
+    </p>
+  </div>
+);
 
-function transformBreakdownToChart(
-  breakdown: Array<{
-    type: string;
-    amount: number;
-    count: number;
-    percentage: number;
-  }>
-) {
-  // Define your chart colors
-  const chartColors = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-    "var(--chart-5)",
-  ];
-
-  // Shuffle colors to randomize assignment
-  const shuffledColors = shuffleArray(chartColors);
-
-  return breakdown.map((item, index) => ({
-    source: snakeToTitleCase(item.type),
-    amount: item.amount,
-    percentage: item.percentage,
-    color: shuffledColors[index % shuffledColors.length],
-  }));
-}
+const EarningDialogComp = ({
+  earnings,
+}: {
+  earnings: EarningHistoryEntity[];
+}) => (
+  <div className="space-y-3">
+    {earnings.map((e) => (
+      <EarningCard earning={e} key={e.id} />
+    ))}
+  </div>
+);
 
 const chartConfig = {
   team_commission: {
     label: "Salary",
-    color: "var(--chart-1)",
+    color: "var(--chart-3)",
   },
   direct_sales: {
     label: "Commission",
-    color: "var(--chart-2)",
+    color: "var(--chart-4)",
   },
   total: {
     label: "Total",
@@ -162,14 +77,36 @@ const chartConfig = {
   },
 };
 
+function transformBreakdownToChart(
+  breakdown: Array<{
+    type: "direct_sales" | "team_commission";
+    amount: number;
+    count: number;
+    percentage: number;
+  }>
+) {
+  return breakdown.map((item, index) => ({
+    source: snakeToTitleCase(item.type),
+    amount: item.amount,
+    percentage: item.percentage,
+    color: chartConfig[item.type].color,
+  }));
+}
+
 export function EarningsSection() {
-  const { earningsOverviewQuery, isOverviewLoading } = useEarnings({
+  const { earningsOverviewQuery } = useEarnings({
     includeStats: true,
   });
-  const { paymentHistoryQuery } = usePayments({});
+  const { earningsHistoryQuery, isHistoryLoading } = useEarnings({
+    limit: 5,
+    status: "pending",
+  });
+  const { paymentHistoryQuery, isPaymentsLoading } = usePayments({});
   const paymentHistoryData = paymentHistoryQuery.data;
-  const [currentPage, setCurrentPage] = useState(1);
-  const recordsPerPage = 5;
+
+  console.log(earningsHistoryQuery.data);
+
+  const earnings = earningsHistoryQuery.data?.earnings;
 
   const monthlyEarnings =
     earningsOverviewQuery.data?.analytics?.earningsTimeSeries || [];
@@ -187,17 +124,64 @@ export function EarningsSection() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Completed":
+    switch (status.toLowerCase()) {
+      case "completed":
+      case "approved":
         return "bg-green-100 text-green-800 border-green-200";
-      case "Processing":
+      case "processing":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "Pending":
+      case "pending":
         return "bg-orange-100 text-orange-800 border-orange-200";
+      case "cancelled":
+      case "rejected":
+        return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
+
+  const renderPayment = (payment: PaymentsEntity) => {
+    return (
+      <div
+        key={payment.id}
+        className="flex items-center justify-between p-4 border border-border rounded-lg"
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+            <DollarSign className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div>
+            <div className="font-medium text-card-foreground">
+              {Number(payment.amount || 0)?.toLocaleString("en-NG", {
+                style: "currency",
+                currency: "NGN",
+              }) || 0}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Requested on{" "}
+              {formatDate(new Date(payment.createdAt).toISOString())} •{" "}
+              {getEarningType(payment.earningType || "direct_sales")}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className={getStatusColor(payment.status)}>
+            {payment.status}
+          </Badge>
+          <p className="text-sm text-muted-foreground">
+            {" "}
+            {payment.processedAt &&
+              payment.processedAt !== "" &&
+              `Processed on ${formatDate(
+                new Date(payment.processedAt).toISOString()
+              )}`}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  const pagination = useCursorPagination();
 
   const summary = [
     {
@@ -232,29 +216,28 @@ export function EarningsSection() {
     },
   ];
 
-  const totalPages = Math.ceil(paymentHistory.length / recordsPerPage);
-  const startIndex = (currentPage - 1) * recordsPerPage;
-  const endIndex = startIndex + recordsPerPage;
-  const currentRecords = paymentHistory.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between relative">
-        <Demo />
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Earnings</h2>
           <p className="text-muted-foreground">
             Track your commission and payment history.
           </p>
         </div>
-        <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-          <DollarSign className="h-4 w-4" />
-          Request Payment
-        </Button>
+        <DialogContainer
+          title="Request Payment"
+          desc="Request payment for approved earnings."
+          dialogComp={<EarningDialogComp earnings={earnings || []} />}
+        >
+          <Button
+            className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+            disabled={isHistoryLoading}
+          >
+            <DollarSign className="h-4 w-4" />
+            Request Payment
+          </Button>
+        </DialogContainer>
       </div>
 
       {/* Summary Cards */}
@@ -280,7 +263,7 @@ export function EarningsSection() {
               Earnings Trend
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Monthly commission and bonus breakdown
+              Monthly commission and bonus breakdown (Approved Earnings)
             </p>
           </CardHeader>
           <CardContent>
@@ -409,7 +392,6 @@ export function EarningsSection() {
 
       {/* Payment History */}
       <Card className="bg-card border-border shadow-sm relative">
-        <Demo />
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-card-foreground">
             <div className="p-1.5 bg-blue-100 rounded-lg">
@@ -422,86 +404,23 @@ export function EarningsSection() {
           </p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {currentRecords.map((payment) => (
-              <div
-                key={payment.id}
-                className="flex items-center justify-between p-4 border border-border rounded-lg"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                    <DollarSign className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <div className="font-medium text-card-foreground">
-                      ₦{payment.amount.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {formatDate(payment.date)} • {payment.method}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge
-                    variant="outline"
-                    className={getStatusColor(payment.status)}
-                  >
-                    {payment.status}
-                  </Badge>
-                  <div className="text-xs text-muted-foreground">
-                    {payment.reference}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
-                <div className="text-sm text-muted-foreground order-2 sm:order-1">
-                  Showing {startIndex + 1} to{" "}
-                  {Math.min(endIndex, paymentHistory.length)} of{" "}
-                  {paymentHistory.length} records
-                </div>
-                <div className="flex items-center gap-2 order-1 sm:order-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="gap-1"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handlePageChange(page)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {page}
-                        </Button>
-                      )
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="gap-1"
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+          <PaginatedTable
+            data={paymentHistoryData?.payments || []}
+            renderItem={renderPayment}
+            emptyState={<EmptyState />}
+            handleFirst={pagination.reset}
+            handleNextPage={pagination.goNext}
+            handlePrevPage={pagination.goPrev}
+            canGoNext={
+              paymentHistoryData?.hasMore ??
+              paymentHistoryData?.nextCursor ??
+              false
+            }
+            canGoPrev={!!paymentHistoryData?.prevCursor}
+            isFirstPage={pagination.cursor === null}
+            isLoading={isPaymentsLoading}
+            hasMore={paymentHistoryData?.hasMore ?? false}
+          />
         </CardContent>
       </Card>
     </div>

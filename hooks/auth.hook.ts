@@ -10,7 +10,7 @@ export function useAuth() {
   const {
     user,
     isAuthenticated,
-
+    role,
     login,
     logout,
     setLoading,
@@ -27,7 +27,7 @@ export function useAuth() {
     onMutate: () => {
       setLoading(true);
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       login({
         user: {
           sub: data.data.sub,
@@ -36,12 +36,13 @@ export function useAuth() {
           isVerified: data.data.isVerified,
           role: data.data.role,
         },
+        adminLogin: variables.isAdmin,
         access_token: data.data.access_token,
         refresh_token: data.data.refresh_token,
       });
 
       data.data.preferences && setPreferences(data.data.preferences);
-      if (data.data.role === "admin") {
+      if (variables.isAdmin) {
         toast.success("Welcome Admin!");
 
         setTimeout(() => {
@@ -129,6 +130,27 @@ export function useAuth() {
     },
   });
 
+  // Resend Verify mutation
+
+  const resendVerifyMutation = useMutation({
+    mutationFn: authApi.resendVerify,
+    onMutate: () => {
+      toast.success("Resending");
+    },
+    onSuccess: (data, variables) => {
+      localStorage.setItem("verification-email", variables.email);
+      toast.success("Verification Mail Sent");
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message || "Verification failed. Try aain later";
+      setVerifyError(message);
+    },
+    onSettled: () => {
+      setLoading(false);
+    },
+  });
+
   const refreshMutation = useMutation({
     mutationFn: authApi.refreshToken,
     onSuccess: (data) => {
@@ -200,7 +222,13 @@ export function useAuth() {
     register: (data: RegisterRequest) => registerMutation.mutateAsync(data),
     refresh: (data: string) => refreshMutation.mutateAsync(data),
     verify: (data: { token: string }) => verifyMutation.mutateAsync(data),
-    logout: () => logoutMutation.mutateAsync(refresh_token || undefined),
+    resendVerify: (data: { email: string }) =>
+      resendVerifyMutation.mutateAsync(data),
+    logout: () =>
+      logoutMutation.mutateAsync({
+        token: refresh_token || undefined,
+        role,
+      }),
     forgotPwd: (email: string) => forgotPwdMutation.mutateAsync(email),
     resetPwd: (data: { token: string; password: string }) =>
       resetPwdMutation.mutateAsync(data),
@@ -215,6 +243,9 @@ export function useAuth() {
     verifyError: verifyMutation?.error?.response?.data?.message,
     isVerifyPending: verifyMutation.isPending,
     verifySuccess: verifyMutation.isSuccess,
+    resenVerifySuccess: resendVerifyMutation.isSuccess,
+    resendVerifyError: resendVerifyMutation.error,
+    resendVerifyLoading: resendVerifyMutation.isPending,
     forgotPwdSuccess: forgotPwdMutation.isSuccess,
     forgotPwdError: forgotPwdMutation.error,
     forgotPwdReset: forgotPwdMutation.reset,

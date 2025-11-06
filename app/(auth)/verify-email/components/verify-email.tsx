@@ -12,33 +12,24 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks";
 
 export default function VerifyEmailPage() {
-  const [isResending, setIsResending] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
+  const { resendVerify, resenVerifySuccess, resendVerifyLoading } = useAuth();
+
   const [userEmail, setUserEmail] = useState("");
+  const email = localStorage.getItem("verification-email") || "";
 
   useEffect(() => {
-    // Get email from localStorage or URL params (set during registration)
-    const email =
-      localStorage.getItem("verification-email") || "john@example.com";
-    setUserEmail(email);
+    setUserEmail(email || "");
   }, []);
 
   const handleResendEmail = async () => {
-    setIsResending(true);
-    setResendSuccess(false);
-
     try {
-      // TODO: Implement resend verification email API call
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate API call
-
-      setResendSuccess(true);
-      setTimeout(() => setResendSuccess(false), 5000);
+      await resendVerify({ email: userEmail });
     } catch (error) {
       console.error("Failed to resend email:", error);
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -71,15 +62,32 @@ export default function VerifyEmailPage() {
 
           <CardContent className="space-y-6">
             {/* User Email Display */}
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-sm text-gray-600 mb-1">
-                Verification email sent to:
-              </p>
-              <p className="font-semibold text-gray-900">{userEmail}</p>
-            </div>
+            {userEmail && userEmail !== "" && (
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <p className="text-sm text-gray-600 mb-1">
+                  Verification email sent to:
+                </p>
+                <p className="font-semibold text-gray-900">{userEmail}</p>
+              </div>
+            )}
+            {!email ||
+              (email === "" && (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-1">
+                    Send verification email to:
+                  </p>
+                  <p className="font-semibold text-gray-900">{userEmail}</p>
+                  <Input
+                    value={userEmail}
+                    onChange={(e) => e.target.value}
+                    type="email"
+                    required
+                  />
+                </div>
+              ))}
 
             {/* Success Alert */}
-            {resendSuccess && (
+            {resenVerifySuccess && (
               <Alert className="border-green-200 bg-green-50">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-700">
@@ -130,10 +138,12 @@ export default function VerifyEmailPage() {
                 <Button
                   variant="outline"
                   onClick={handleResendEmail}
-                  disabled={isResending}
+                  disabled={
+                    !userEmail || userEmail === "" || resendVerifyLoading
+                  }
                   className="w-full"
                 >
-                  {isResending ? (
+                  {resendVerifyLoading ? (
                     <>
                       <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
                       Sending...

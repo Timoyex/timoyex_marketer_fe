@@ -18,6 +18,8 @@ import { useTeam } from "@/hooks/team.hook";
 import { SkeletalInfoCard } from "@/components/custom/skeleton";
 import { EmptyState, teamColumns } from "./columns";
 import { DataTable } from "@/components/custom/dataTable";
+import { useState } from "react";
+import { useCursorPagination } from "@/lib/pagination-fn";
 
 const statusOptions = [
   { value: "all", label: "All Status" },
@@ -39,7 +41,7 @@ const levelOptions = [
   { value: "10", label: "Level 10" },
 ];
 
-export function FilterSlots({ table }: { table: any }) {
+function FilterSlots({ table }: { table: any }) {
   const statusValue =
     (table.getColumn("status")?.getFilterValue() as string) ?? "";
   const levelValue =
@@ -85,16 +87,26 @@ export function FilterSlots({ table }: { table: any }) {
 }
 
 export function TeamSection() {
+  const url = typeof window !== "undefined" ? window.location.hostname : "";
+  const pagination = useCursorPagination();
+
   const { profileQuery, isLoading } = useProfile();
   const {
     teamStats: memberStats,
     teamStatsIsLoading,
-    downlineMembers,
-    downlineIsLoading,
-  } = useTeam(profileQuery.data?.marketerCode || ""); //tanstack query
+    downlineMembersV2,
+    downlineIsLoadingV2,
+  } = useTeam(profileQuery.data?.marketerCode || "", {
+    limit: 2,
+    cursor: pagination.cursor,
+  }); //tanstack query
+
+  console.log(downlineMembersV2);
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleInviteMember = async () => {
-    const referralLink = `https://yourplatform.com/join/${profileQuery.data?.marketerCode}`;
+    const referralLink = `${url}/join/${profileQuery.data?.marketerCode}`;
     await copyToClipboard(referralLink);
   };
 
@@ -161,22 +173,48 @@ export function TeamSection() {
           </div>
         </CardHeader>
         <CardContent>
-          {downlineIsLoading && (
+          {downlineIsLoadingV2 && (
             <DataTable
               data={[]}
               columns={teamColumns}
               emptyState={<EmptyState />}
             />
           )}
-          {!downlineIsLoading && (
+          {!downlineIsLoadingV2 && (
             <DataTable
-              data={downlineMembers?.members || []}
+              data={downlineMembersV2?.members || []}
               columns={teamColumns}
               searchPlaceholder="Search by name"
               searchTerm="name"
               emptyState={<EmptyState />}
               filterSlot={({ table }) => <FilterSlots table={table} />}
               globalSearchColumns={["name", "status", "level"]}
+              serverSide={{
+                searchQuery,
+                onSearchChange: (value) => {
+                  setSearchQuery(value);
+                  pagination.reset();
+                },
+                hasMore:
+                  Boolean(downlineMembersV2?.nextCursor) ??
+                  downlineMembersV2?.hasMore ??
+                  false,
+                onNextPage: () => {
+                  if (downlineMembersV2?.nextCursor) {
+                    pagination.goNext(downlineMembersV2?.nextCursor!);
+                  }
+                },
+                onPrevPage: () => {
+                  if (downlineMembersV2?.prevCursor) {
+                    pagination.goPrev(downlineMembersV2?.prevCursor!);
+                  }
+                },
+                onFirstPage: pagination.reset,
+                canGoPrev: !!downlineMembersV2?.prevCursor,
+                isFirstPage: pagination.cursor === null,
+                isLoading,
+                currentPageSize: downlineMembersV2?.members?.length,
+              }}
             />
           )}
         </CardContent>

@@ -10,6 +10,7 @@ import {
   ColumnDef,
   SortingState,
   ColumnFiltersState,
+  type Table,
 } from "@tanstack/react-table";
 import {
   ChevronLeft,
@@ -19,7 +20,7 @@ import {
   Search,
 } from "lucide-react";
 import {
-  Table,
+  Table as UiTable,
   TableBody,
   TableCell,
   TableHead,
@@ -29,17 +30,39 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface DataTableProps<TData, TValue> {
+export interface ServerSideConfig {
+  searchQuery?: string;
+  onSearchChange?: (value: string) => void;
+
+  filterQuery?: Record<string, any>;
+  onFilterChange?: (value: Record<string, any>) => void;
+
+  cursor?: string | null;
+  nextCursor?: string | null;
+  prevCursor?: string | null;
+
+  hasMore: boolean;
+  canGoPrev: boolean;
+  isFirstPage: boolean;
+
+  onNextPage: () => void;
+  onPrevPage: () => void;
+  onFirstPage: () => void;
+
+  currentPageSize?: number;
+  isLoading?: boolean;
+}
+
+export interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   searchPlaceholder?: string;
   emptyState?: React.ReactNode;
-  // Custom filter slot
-  filterSlot?: (props: {
-    table: ReturnType<typeof useReactTable<TData>>;
-  }) => React.ReactNode;
-  searchTerm?: string;
   globalSearchColumns?: string[];
+  filterSlot?: (props: { table: Table<TData> }) => React.ReactNode;
+
+  // optional server mode
+  serverSide?: ServerSideConfig;
 }
 
 interface PaginatedTableProps<TData, TValue> {
@@ -62,87 +85,119 @@ export function DataTable<TData, TValue>({
   data,
   searchPlaceholder = "Search...",
   emptyState,
-  filterSlot,
-  searchTerm,
   globalSearchColumns,
+  filterSlot,
+  serverSide,
 }: DataTableProps<TData, TValue>) {
+  const isServer = !!serverSide;
+
+  // States (client mode only)
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
+  // -------------------------------------------------
+  // React Table
+  // -------------------------------------------------
+
   const table = useReactTable({
     data,
     columns,
+
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
+    getPaginationRowModel: !isServer ? getPaginationRowModel() : undefined,
+    getFilteredRowModel: !isServer ? getFilteredRowModel() : undefined,
+
     state: {
-      sorting,
-      columnFilters,
-      globalFilter,
+      sorting: isServer ? [] : sorting,
+      columnFilters: isServer ? [] : columnFilters,
+      globalFilter: isServer ? "" : globalFilter,
     },
+
+    manualPagination: isServer,
+    manualFiltering: isServer,
+
+    onSortingChange: isServer ? undefined : setSorting,
+    onColumnFiltersChange: isServer ? undefined : setColumnFilters,
+    onGlobalFilterChange: isServer ? undefined : setGlobalFilter,
+
+    globalFilterFn: isServer
+      ? undefined
+      : (row, columnIds, filterValue) => {
+          const targets: string[] = Array.isArray(globalSearchColumns)
+            ? globalSearchColumns
+            : Array.isArray(columnIds)
+            ? columnIds
+            : [columnIds];
+
+          return targets.some((col) => {
+            const val = row.getValue(col);
+            return typeof val === "string" || typeof val === "number"
+              ? val.toString().toLowerCase().includes(filterValue.toLowerCase())
+              : false;
+          });
+        },
+
     initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-    globalFilterFn: (row, columnIds, filterValue) => {
-      const searchable: string[] = Array.isArray(globalSearchColumns)
-        ? globalSearchColumns
-        : Array.isArray(columnIds)
-        ? columnIds
-        : [columnIds]; // ensure it's always an array
-      return searchable.some((colId) => {
-        const value = row.getValue(colId);
-        if (typeof value === "string" || typeof value === "number") {
-          return value
-            .toString()
-            .toLowerCase()
-            .includes(filterValue.toLowerCase());
-        }
-        return false;
-      });
+      pagination: { pageSize: 10 },
     },
   });
 
+  // -------------------------------------------------
+  // Search input
+  // -------------------------------------------------
+
+  const handleSearchChange = (value: string) => {
+    if (isServer) {
+      serverSide?.onSearchChange?.(value);
+    } else {
+      setGlobalFilter(value);
+    }
+  };
+
+  const searchValue = isServer ? serverSide?.searchQuery ?? "" : globalFilter;
+
+  // -------------------------------------------------
+  // Render UI
+  // -------------------------------------------------
+
   return (
     <div className="w-full space-y-4">
-      {/* Filters Row */}
+      {/* Search + Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search Input */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={searchPlaceholder || "Search..."}
-            value={globalFilter ?? ""}
-            onChange={(event) => setGlobalFilter(event.target.value)}
+            value={searchValue}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder={searchPlaceholder}
+            disabled={serverSide?.isLoading}
             className="pl-10"
           />
         </div>
 
-        {/* Custom Filters Slot */}
         {filterSlot && filterSlot({ table })}
       </div>
+
       {/* Table */}
       <div className="rounded-md border">
         {!data || data.length === 0 ? (
-          emptyState || (
+          emptyState ?? (
             <div className="flex items-center justify-center py-16">
-              <p className="text-muted-foreground">No data available</p>
+              <p className="text-muted-foreground">
+                {serverSide?.isLoading ? "Loading..." : "No data available"}
+              </p>
             </div>
           )
         ) : (
           <>
-            <Table className="min-w-full">
+            <UiTable>
               <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id} className="px-6">
+                {table.getHeaderGroups().map((hg) => (
+                  <TableRow key={hg.id}>
+                    {hg.headers.map((header) => (
+                      <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -154,12 +209,13 @@ export function DataTable<TData, TValue>({
                   </TableRow>
                 ))}
               </TableHeader>
+
               <TableBody>
-                {table.getRowModel().rows?.length ? (
+                {table.getRowModel().rows.length ? (
                   table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="px-6">
+                        <TableCell key={cell.id}>
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()
@@ -179,83 +235,14 @@ export function DataTable<TData, TValue>({
                   </TableRow>
                 )}
               </TableBody>
-            </Table>
+            </UiTable>
 
             {/* Pagination */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                Showing{" "}
-                {table.getState().pagination.pageIndex *
-                  table.getState().pagination.pageSize +
-                  1}{" "}
-                to{" "}
-                {Math.min(
-                  (table.getState().pagination.pageIndex + 1) *
-                    table.getState().pagination.pageSize,
-                  data.length
-                )}{" "}
-                of {data.length} results
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.setPageIndex(0)}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from(
-                    { length: Math.min(5, table.getPageCount()) },
-                    (_, i) => (
-                      <Button
-                        key={i}
-                        variant={
-                          table.getState().pagination.pageIndex === i
-                            ? "default"
-                            : "outline"
-                        }
-                        size="sm"
-                        onClick={() => table.setPageIndex(i)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {i + 1}
-                      </Button>
-                    )
-                  )}
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                  disabled={!table.getCanNextPage()}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            {isServer ? (
+              <ServerPagination server={serverSide} data={data} />
+            ) : (
+              <ClientPagination table={table} />
+            )}
           </>
         )}
       </div>
@@ -332,3 +319,109 @@ export const PaginatedTable = <TData, TValue>({
     </div>
   );
 };
+
+function ServerPagination({
+  server,
+  data,
+}: {
+  server: ServerSideConfig;
+  data: any[];
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t">
+      <div className="text-sm text-muted-foreground">
+        Showing {server.currentPageSize ?? data.length} items
+        {server.hasMore && " • More available"}
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={server.onFirstPage}
+          disabled={server.isFirstPage || server.isLoading}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={server.onPrevPage}
+          disabled={!server.canGoPrev || server.isLoading}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={server.onNextPage}
+          disabled={!server.hasMore || server.isLoading}
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ClientPagination<T>({ table }: { table: Table<T> }) {
+  const page = table.getState().pagination;
+
+  const start = page.pageIndex * page.pageSize + 1;
+  const end = Math.min(
+    (page.pageIndex + 1) * page.pageSize,
+    table.getRowCount()
+  );
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-4 border-t">
+      <div className="text-sm text-muted-foreground">
+        Showing {start} to {end} of {table.getRowCount()} results
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.setPageIndex(0)}
+          disabled={!table.getCanPreviousPage()}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.previousPage()}
+          disabled={!table.getCanPreviousPage()}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.nextPage()}
+          disabled={!table.getCanNextPage()}
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+          disabled={!table.getCanNextPage()}
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}

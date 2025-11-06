@@ -6,6 +6,8 @@ export { notificationsApi } from "./notifications";
 export { earningsApi } from "./earning";
 export { revenueApi } from "./revenue";
 export { paymentsApi } from "./payment";
+export { announcementsApi } from "./announcements";
+export { usersApi } from "./users";
 
 export type * from "./auth";
 export type * from "./settings";
@@ -14,3 +16,5 @@ export type * from "./notifications";
 export type * from "./earning";
 export type * from "./revenue";
 export type * from "./payment";
+export type * from "./announcements";
+export type * from "./users";

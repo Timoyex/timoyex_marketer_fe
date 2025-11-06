@@ -11,6 +11,8 @@ export interface User {
 
 export interface AuthState {
   user: User | null;
+  role?: string | null;
+  adminLogin?: boolean | null;
   access_token: string | null;
   refresh_token: string | null;
   isAuthenticated: boolean;
@@ -26,10 +28,14 @@ export interface AuthState {
     user,
     access_token,
     refresh_token,
+    role,
+    adminLogin,
   }: {
     user: User;
     access_token: string;
     refresh_token: string;
+    role?: string;
+    adminLogin?: boolean | null;
   }) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
@@ -45,6 +51,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
       verifyError: null,
+      adminLogin: null,
 
       setUser: (user) => set({ user, isAuthenticated: true }),
 
@@ -52,13 +59,15 @@ export const useAuthStore = create<AuthState>()(
       setRefreshToken: (refresh_token) => set({ refresh_token }),
       setVerifyError: (verifyError) => set({ verifyError }),
 
-      login: ({ user, access_token, refresh_token }) =>
+      login: ({ user, access_token, refresh_token, role, adminLogin }) =>
         set({
           user,
           access_token,
           refresh_token,
           isAuthenticated: true,
           isLoading: false,
+          role,
+          adminLogin,
         }),
 
       logout: () =>
@@ -68,6 +77,8 @@ export const useAuthStore = create<AuthState>()(
           refresh_token: null,
           isAuthenticated: false,
           isLoading: false,
+          role: null,
+          adminLogin: false,
         }),
 
       setLoading: (isLoading) => set({ isLoading }),
@@ -86,6 +97,8 @@ export const useAuthStore = create<AuthState>()(
         access_token: state.access_token,
         refresh_token: state.refresh_token,
         isAuthenticated: state.isAuthenticated,
+        role: state.role,
+        adminLogin: state.adminLogin,
       }),
     }
   )

@@ -5,6 +5,7 @@ export interface BankAccount {
   accountNumber: string;
   accountName: string;
   bvn?: string;
+  isVerified?: boolean;
 }
 
 export interface Accounts {
@@ -37,7 +38,6 @@ export interface UserProfile {
   nationality?: string;
   address?: string;
   avatar?: string | File;
-  //   status: UserStatus;
   identification?: Identification;
   marketerCode: string;
   shopperCode: string;
@@ -49,6 +49,9 @@ export interface UserProfile {
   totalRecruits: number;
   status: string;
   level?: number;
+  levelUpdatedAt?: string;
+  directCount?: number;
+  totalDownlineCount?: number;
 }
 
 interface ProfileState {
