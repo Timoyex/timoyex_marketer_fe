@@ -18,10 +18,12 @@ import { useAuth } from "@/hooks";
 export default function VerifyEmailPage() {
   const { resendVerify, resenVerifySuccess, resendVerifyLoading } = useAuth();
 
+  let email = "";
+
   const [userEmail, setUserEmail] = useState("");
-  const email = localStorage.getItem("verification-email") || "";
 
   useEffect(() => {
+    email = localStorage.getItem("verification-email") || "";
     setUserEmail(email || "");
   }, []);
 
