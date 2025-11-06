@@ -28,6 +28,7 @@ export default function VerifyEmailPage() {
   const handleResendEmail = async () => {
     try {
       await resendVerify({ email: userEmail });
+      localStorage.setItem("verification-email", userEmail);
     } catch (error) {
       console.error("Failed to resend email:", error);
     }

@@ -137,8 +137,7 @@ export function useAuth() {
     onMutate: () => {
       toast.success("Resending");
     },
-    onSuccess: (data, variables) => {
-      localStorage.setItem("verification-email", variables.email);
+    onSuccess: () => {
       toast.success("Verification Mail Sent");
     },
     onError: (error: any) => {
