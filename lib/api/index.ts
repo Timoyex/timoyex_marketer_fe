@@ -8,6 +8,7 @@ export { revenueApi } from "./revenue";
 export { paymentsApi } from "./payment";
 export { announcementsApi } from "./announcements";
 export { usersApi } from "./users";
+export { paystackApi } from "./paystack";
 
 export type * from "./auth";
 export type * from "./settings";
@@ -18,3 +19,4 @@ export type * from "./revenue";
 export type * from "./payment";
 export type * from "./announcements";
 export type * from "./users";
+export type * from "./paystack";

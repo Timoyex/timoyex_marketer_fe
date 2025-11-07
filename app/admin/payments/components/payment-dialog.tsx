@@ -41,8 +41,6 @@ export const PaymentDialog = ({
 
     const changedValues = getChangedValues(dirtyFields, values);
 
-    console.log(changedValues);
-
     const status = type === "approve" ? "processing" : "rejected";
     await updatePayment({
       id: payment?.id!,

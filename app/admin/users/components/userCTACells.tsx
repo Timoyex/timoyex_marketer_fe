@@ -26,12 +26,10 @@ export const UserCTACells = ({ user }: { user: Partial<UserProfile> }) => {
   const { updateUser, deleteUser } = useUsers();
 
   const handleSuspend = async () => {
-    console.log(user.id);
     await updateUser({ id: user.id!, dto: { status: "inactive" } });
     return;
   };
   const handleDelete = async () => {
-    console.log(user.id);
     await deleteUser(user.id!);
     return;
   };

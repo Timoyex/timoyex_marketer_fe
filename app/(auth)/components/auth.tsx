@@ -134,7 +134,6 @@ export default function Auth() {
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
-      console.log(values);
       login(values);
     } catch (error) {
       toast.error("Login failed. Please try again.");

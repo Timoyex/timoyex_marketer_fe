@@ -25,7 +25,7 @@ export default function UserManagement() {
 
   const stats = [
     {
-      title: "Total Usets",
+      title: "Total Users",
       value:
         userStats?.total?.toLocaleString("en-NG", {
           notation: "compact",
@@ -41,15 +41,6 @@ export default function UserManagement() {
         }) ?? 0,
       icon: CheckCircle,
       iconBg: "text-green-600",
-    },
-    {
-      title: "Pending Users",
-      value:
-        userStats?.pending?.toLocaleString("en-NG", {
-          notation: "compact",
-        }) ?? 0,
-      icon: Edit,
-      iconBg: "text-blue-600",
     },
     {
       title: "Suspended / Inactive",
@@ -122,7 +113,7 @@ export default function UserManagement() {
         {/* User Management Content */}
         <main className="p-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {stats.map((stat) => (
               <AdminInfoCard
                 key={stat.title}

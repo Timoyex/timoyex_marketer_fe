@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { UserCTACells } from "./userCTACells";
 import { UserProfile } from "@/lib/stores/profile.store";
-import { isDateString } from "@/lib/utils";
+import { getLevelBadgeColor, isDateString } from "@/lib/utils";
 
 export const EmptyState = () => (
   <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -20,14 +20,6 @@ export const EmptyState = () => (
     </p>
   </div>
 );
-
-export const getLevelBadgeColor = (level: number) => {
-  if (level <= 2) return "bg-gray-100 text-gray-800";
-  if (level <= 4) return "bg-blue-100 text-blue-800";
-  if (level <= 6) return "bg-green-100 text-green-800";
-  if (level <= 8) return "bg-orange-100 text-orange-800";
-  return "bg-purple-100 text-purple-800";
-};
 
 export const getStatusBadgeColor = (status: string) => {
   switch (status) {

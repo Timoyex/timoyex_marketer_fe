@@ -746,7 +746,6 @@ export function SettingsSection() {
                   name="inApp.isActive"
                   control={notificationsForm.control}
                   render={({ field }) => {
-                    console.log(field, "inapp");
                     return (
                       <Switch
                         id="in-app-active"

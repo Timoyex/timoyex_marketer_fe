@@ -20,9 +20,7 @@ export default function DashboardLayout({
 
       {/* Main content */}
 
-      <main className={clsx("transition-all duration-300")}>
-        <VerifyGuard>{children}</VerifyGuard>
-      </main>
+      <main className={clsx("transition-all duration-300")}>{children}</main>
     </div>
   );
 }

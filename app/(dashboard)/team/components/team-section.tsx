@@ -101,8 +101,6 @@ export function TeamSection() {
     cursor: pagination.cursor,
   }); //tanstack query
 
-  console.log(downlineMembersV2);
-
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleInviteMember = async () => {

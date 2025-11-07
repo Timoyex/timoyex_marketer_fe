@@ -32,7 +32,6 @@ export const AnnCTACells = ({
 
   const handleRemove = async () => {
     // await remove(announcement.id!);
-    console.log(announcement.id);
     await remove(announcement.id!);
   };
 

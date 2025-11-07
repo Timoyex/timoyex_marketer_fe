@@ -88,7 +88,7 @@ export function useAuth() {
       toast.success("Account created successfully! Please Log In");
 
       setTimeout(() => {
-        console.log("log in please");
+        console.log("verify please");
       }, 3000);
       router.push("/verify-email");
     },

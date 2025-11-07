@@ -17,6 +17,7 @@ import {
   FileText,
   Upload,
   BadgeCheck,
+  BadgeCheckIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,15 @@ import { useProfile } from "@/hooks/profile.hook";
 import { cleanPayload, getChangedValues } from "@/lib/form.utils";
 import { toast } from "sonner";
 import { SkeletalForm } from "@/components/custom/skeleton";
+import { getLevelBadgeColor } from "@/lib/utils";
+import {
+  BankAccount,
+  NextOfKin,
+  UserProfile,
+} from "@/lib/stores/profile.store";
+import { usePaystack } from "@/hooks/paystack.hook";
+import { useEarnings } from "@/hooks/earning.hook";
+import { useTeam } from "@/hooks/team.hook";
 
 // Schemas
 const personalInfoSchema = z.object({
@@ -92,16 +102,6 @@ export const identificationSchema = z.object({
     .refine((file) => file.size <= 10 * 1024 * 1024, "File must be <= 10MB"),
 });
 
-// Options
-const nigerianBanks = [
-  "Access Bank",
-  "GTB",
-  "Guaranty Trust Bank (GTB)",
-  "First Bank",
-  "UBA",
-  "Zenith Bank",
-  "Others",
-];
 const relationshipOptions = [
   "Father",
   "Mother",
@@ -122,18 +122,27 @@ export function ProfileSection() {
   // Single consolidated hook
   const { profileQuery, updateProfile, isLoading, isUpdating } = useProfile();
 
+  // Paystack Hook
+  const { banksQuery, isBanksLoading } = usePaystack();
+
+  const { earningsOverviewQuery } = useEarnings();
+
+  const { teamStats } = useTeam(profileQuery.data?.marketerCode || "", {});
+
   // Forms
   const personalForm = useForm({
     resolver: zodResolver(personalInfoSchema),
-    defaultValues: async () => profileQuery.data || {},
+    defaultValues: async () => profileQuery.data || ({} as UserProfile),
   });
   const bankForm = useForm({
     resolver: zodResolver(bankDetailsSchema),
-    defaultValues: async () => profileQuery.data?.bankAccount || {},
+    defaultValues: async () =>
+      profileQuery.data?.bankAccount || ({} as BankAccount),
   });
   const nextOfKinForm = useForm({
     resolver: zodResolver(nextOfKinSchema),
-    defaultValues: async () => profileQuery.data?.nextOfKin || {},
+    defaultValues: async () =>
+      profileQuery.data?.nextOfKin || ({} as NextOfKin),
   });
 
   const identificationForm = useForm({
@@ -217,7 +226,11 @@ export function ProfileSection() {
       return;
     }
 
-    const cleanedValues = cleanPayload(changedValues);
+    const { isVerified, ...bank } = form.getValues();
+
+    const cleanedValues = cleanPayload(
+      section === "bank" ? bank : changedValues
+    );
 
     const payload = key ? { [key]: cleanedValues } : cleanedValues;
 
@@ -308,9 +321,9 @@ export function ProfileSection() {
       ? `${profileQuery.data.firstName} ${profileQuery.data.lastName}`
       : "Loading...",
     joinDate: profileQuery.data?.createdAt || new Date().toISOString(),
-    level: 1,
-    totalEarnings: profileQuery.data?.totalEarnings || 0,
-    totalRecruits: profileQuery.data?.totalRecruits || 0,
+    level: profileQuery.data?.level || 0,
+    totalEarnings: earningsOverviewQuery.data?.summary.totalEarnings || 0,
+    totalRecruits: teamStats?.totalDownlines || 0,
     avatar: profileQuery.data?.avatar,
     status: profileQuery.data?.status || "active",
   };
@@ -321,14 +334,6 @@ export function ProfileSection() {
       month: "long",
       day: "numeric",
     });
-  const getLevelBadgeColor = (level: number) =>
-    ({
-      1: "bg-gray-100 text-gray-800 border-gray-200",
-      2: "bg-blue-100 text-blue-800 border-blue-200",
-      3: "bg-green-100 text-green-800 border-green-200",
-      4: "bg-purple-100 text-purple-800 border-purple-200",
-      5: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    }[level] || "bg-gray-100 text-gray-800 border-gray-200");
 
   const isEditing = (section: string) => editingSection === section;
 
@@ -420,7 +425,10 @@ export function ProfileSection() {
                     Total Earnings
                   </span>
                   <span className="font-medium text-card-foreground">
-                    ${profileOverview.totalEarnings.toLocaleString()}
+                    {profileOverview.totalEarnings.toLocaleString("en-NG", {
+                      style: "currency",
+                      currency: "NGN",
+                    })}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -641,7 +649,7 @@ export function ProfileSection() {
             </Card>
 
             {/* Identification Details Card */}
-            <Card className="bg-card border-border shadow-sm">
+            {/* <Card className="bg-card border-border shadow-sm">
               <SectionHeader
                 title="Identification Details"
                 icon={FileText}
@@ -740,7 +748,7 @@ export function ProfileSection() {
                 </Form>
               </CardContent>
               <CardFooter></CardFooter>
-            </Card>
+            </Card> */}
 
             {/* Bank Details */}
             <Card className="bg-card border-border shadow-sm">
@@ -748,6 +756,7 @@ export function ProfileSection() {
                 title="Bank Details"
                 icon={CreditCard}
                 sectionKey="bank"
+                extra={bankForm.getValues().isVerified && BadgeCheckIcon}
               />
               <CardContent className="space-y-4">
                 <Form {...bankForm}>
@@ -772,7 +781,7 @@ export function ProfileSection() {
                         <FormItem>
                           <FormLabel>Bank Name</FormLabel>
                           <Select
-                            disabled={!isEditing("bank")}
+                            disabled={!isEditing("bank") || isBanksLoading}
                             onValueChange={field.onChange}
                             value={field.value}
                           >
@@ -785,11 +794,25 @@ export function ProfileSection() {
                               />
                             </SelectTrigger>
                             <SelectContent>
-                              {nigerianBanks.map((bank) => (
-                                <SelectItem key={bank} value={bank}>
-                                  {bank}
+                              {isBanksLoading ? (
+                                <SelectItem value="" disabled>
+                                  Loading banks...
                                 </SelectItem>
-                              ))}
+                              ) : banksQuery.isError ? (
+                                <SelectItem value="" disabled>
+                                  Error loading banks
+                                </SelectItem>
+                              ) : banksQuery.data?.length === 0 ? (
+                                <SelectItem value="" disabled>
+                                  No banks available
+                                </SelectItem>
+                              ) : (
+                                banksQuery.data?.map((bank) => (
+                                  <SelectItem key={bank.id} value={bank.name}>
+                                    {bank.name}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                           <FormMessage />
@@ -959,17 +982,7 @@ export function ProfileSection() {
 
                   <Button
                     onClick={() => {
-                      console.log("=== NEXTOFKIN DEBUG ===");
-                      console.log("Values:", nextOfKinForm.getValues());
-                      console.log(
-                        "Dirty fields:",
-                        nextOfKinForm.formState.dirtyFields
-                      );
-                      console.log("Is dirty:", nextOfKinForm.formState.isDirty);
-                      console.log(
-                        "Default values:",
-                        nextOfKinForm.formState.defaultValues
-                      );
+                     
                     }}
                     className="mt-2"
                   >

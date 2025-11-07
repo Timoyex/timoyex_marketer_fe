@@ -53,7 +53,6 @@ export function useNotifications() {
     });
     // CREATED
     socket.on(NOTIFICATIONS_EVENTS.NEW, (n: Notification) => {
-      console.log(n, "new");
       addNotification(n);
     });
 

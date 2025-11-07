@@ -104,8 +104,6 @@ export function EarningsSection() {
   const { paymentHistoryQuery, isPaymentsLoading } = usePayments({});
   const paymentHistoryData = paymentHistoryQuery.data;
 
-  console.log(earningsHistoryQuery.data);
-
   const earnings = earningsHistoryQuery.data?.earnings;
 
   const monthlyEarnings =

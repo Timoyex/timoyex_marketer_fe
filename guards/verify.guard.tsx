@@ -19,42 +19,10 @@ export function VerifyGuard({
   const { isAuthenticated, user } = useAuthStore();
 
   useEffect(() => {
-    if (
-      !requireAuth &&
-      isAuthenticated &&
-      requireVerified &&
-      !user?.isVerified
-    ) {
-      router.push("/verify-rmail");
-    }
-
-    if (!requireAuth && isAuthenticated) {
-      router.push("/overview");
+    if (requireVerified && user && !user?.isVerified) {
+      router.push("/verify-email");
     }
   }, [isAuthenticated, requireAuth, router]);
-
-  // Show loading or redirect
-  if (requireAuth && !isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
-      </div>
-    );
-  }
-
-  if (!requireAuth && isAuthenticated) {
-    return null;
-  }
-
-  if (requireVerified && !user?.isVerified) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent">
-          Please verify your email address
-        </div>
-      </div>
-    );
-  }
 
   return <>{children}</>;
 }

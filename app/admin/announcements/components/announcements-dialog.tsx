@@ -46,7 +46,6 @@ export const AnnouncementDialog = ({
   const formatScheduledAt = (
     value: string | Date | null | undefined
   ): string => {
-    console.log(value);
     if (!value) return "";
     if (typeof value === "string") return value;
     return value.toISOString().slice(0, 16);
@@ -117,7 +116,6 @@ export const AnnouncementDialog = ({
       announcementForm.getValues()
     );
 
-    console.log("Changed values only:", changedValues);
     await create({
       title: changedValues.title!,
       content: changedValues.content!,
