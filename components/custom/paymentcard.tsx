@@ -10,20 +10,31 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useAdminPayments } from "@/hooks/admin-payments.hook";
 
 export function PaymentInfoCard({
   name,
   level,
   amount,
   type = "Sale Commission",
-  handleApprove,
+  userId,
+  id,
 }: {
   name: string;
   level: string | number;
   amount?: number;
   type?: string;
-  handleApprove?: () => void;
+  id: string;
+  userId: string;
 }) {
+  const { updatePayment } = useAdminPayments({});
+
+  const handleApprove = async () => {
+    await updatePayment({
+      id,
+      data: { status: "processing", userId },
+    });
+  };
   return (
     <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
       <div className="flex items-start justify-between">
@@ -53,7 +64,6 @@ export function PaymentInfoCard({
             <Button
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleApprove}
             >
               Approve Payment
             </Button>
@@ -72,7 +82,9 @@ export function PaymentInfoCard({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction>Continue</AlertDialogAction>
+              <AlertDialogAction onClick={handleApprove}>
+                Continue
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

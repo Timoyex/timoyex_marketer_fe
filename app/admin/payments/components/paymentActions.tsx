@@ -10,6 +10,7 @@ import {
 import { DialogContainer } from "@/components/custom/dialog-container";
 import { PaymentDialog } from "./payment-dialog";
 import { PaymentRecord } from "./payment-record";
+import { OTPDialog } from "./otp-dialog";
 
 export const PaymentActions = ({
   payment,
@@ -45,6 +46,21 @@ export const PaymentActions = ({
           </DialogContainer>
         </>
       )}
+      {payment.status === "processing" && payment.requireOTP && (
+        <DialogContainer
+          title="Enter OTP to Approve Payment"
+          desc=""
+          dialogComp={<OTPDialog payment={payment} />}
+        >
+          <Button
+            size="sm"
+            className="bg-yellow-600 hover:bg-yellow-700 text-white"
+          >
+            Enter OTP
+          </Button>
+        </DialogContainer>
+      )}
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm">

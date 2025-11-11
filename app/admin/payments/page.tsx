@@ -79,9 +79,6 @@ export default function PaymentManagement() {
     );
   }
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterAmount, setFilterAmount] = useState("all");
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(
@@ -89,194 +86,6 @@ export default function PaymentManagement() {
   );
   const [actionNote, setActionNote] = useState("");
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-
-  const payments = [
-    {
-      id: "PAY-001",
-      user: {
-        name: "John Doe",
-        email: "john@example.com",
-        level: 2,
-        avatar: "/placeholder-user.jpg",
-        joinDate: "2024-01-15",
-        directRecruits: 8,
-        totalNetwork: 45,
-      },
-      amount: "₦52,400",
-      type: "Monthly Salary",
-      status: "pending",
-      requestDate: "2024-12-27",
-      dueDate: "2024-12-31",
-      bankDetails: {
-        accountName: "John Doe",
-        accountNumber: "1234567890",
-        bankName: "First Bank",
-        bankCode: "011",
-        verified: true,
-      },
-      teamRevenue: "₦8.5M",
-      qualificationMet: true,
-      qualificationDetails: {
-        minimumTeamRevenue: "₦5M",
-        actualTeamRevenue: "₦8.5M",
-        minimumDirectRecruits: 5,
-        actualDirectRecruits: 8,
-        minimumNetworkSize: 30,
-        actualNetworkSize: 45,
-        activeMonths: 11,
-        minimumActiveMonths: 6,
-      },
-      note: "Monthly salary for Level 2 marketer",
-    },
-    {
-      id: "PAY-002",
-      user: {
-        name: "Sarah Johnson",
-        email: "sarah@example.com",
-        level: 5,
-        avatar: "/placeholder-user.jpg",
-        joinDate: "2023-08-20",
-        directRecruits: 25,
-        totalNetwork: 180,
-      },
-      amount: "₦200,000",
-      type: "Monthly Salary",
-      status: "approved",
-      requestDate: "2024-12-25",
-      dueDate: "2024-12-30",
-      bankDetails: {
-        accountName: "Sarah Johnson",
-        accountNumber: "0987654321",
-        bankName: "GTBank",
-        bankCode: "058",
-        verified: true,
-      },
-      teamRevenue: "₦75M",
-      qualificationMet: true,
-      qualificationDetails: {
-        minimumTeamRevenue: "₦50M",
-        actualTeamRevenue: "₦75M",
-        minimumDirectRecruits: 20,
-        actualDirectRecruits: 25,
-        minimumNetworkSize: 150,
-        actualNetworkSize: 180,
-        activeMonths: 16,
-        minimumActiveMonths: 12,
-      },
-      note: "Monthly salary for Level 5 marketer - Assistant Branch Manager",
-    },
-    {
-      id: "PAY-003",
-      user: {
-        name: "Mike Chen",
-        email: "mike@example.com",
-        level: 8,
-        avatar: "/placeholder-user.jpg",
-        joinDate: "2023-03-10",
-        directRecruits: 50,
-        totalNetwork: 420,
-      },
-      amount: "₦700,000",
-      type: "Monthly Salary + Car Bonus",
-      status: "processing",
-      requestDate: "2024-12-24",
-      dueDate: "2024-12-29",
-      bankDetails: {
-        accountName: "Mike Chen",
-        accountNumber: "1122334455",
-        bankName: "Access Bank",
-        bankCode: "044",
-        verified: true,
-      },
-      teamRevenue: "₦170M",
-      qualificationMet: true,
-      qualificationDetails: {
-        minimumTeamRevenue: "₦150M",
-        actualTeamRevenue: "₦170M",
-        minimumDirectRecruits: 40,
-        actualDirectRecruits: 50,
-        minimumNetworkSize: 400,
-        actualNetworkSize: 420,
-        activeMonths: 21,
-        minimumActiveMonths: 18,
-      },
-      note: "Monthly salary for Level 8 Expert Marketer + SUV car bonus",
-    },
-    {
-      id: "PAY-004",
-      user: {
-        name: "Emily Davis",
-        email: "emily@example.com",
-        level: 1,
-        avatar: "/placeholder-user.jpg",
-        joinDate: "2024-11-01",
-        directRecruits: 2,
-        totalNetwork: 8,
-      },
-      amount: "₦10,000",
-      type: "Commission",
-      status: "rejected",
-      requestDate: "2024-12-26",
-      dueDate: "2024-12-31",
-      bankDetails: {
-        accountName: "Emily Davis",
-        accountNumber: "5566778899",
-        bankName: "UBA",
-        bankCode: "033",
-        verified: false,
-      },
-      teamRevenue: "₦2.1M",
-      qualificationMet: false,
-      qualificationDetails: {
-        minimumTeamRevenue: "₦5M",
-        actualTeamRevenue: "₦2.1M",
-        minimumDirectRecruits: 5,
-        actualDirectRecruits: 2,
-        minimumNetworkSize: 15,
-        actualNetworkSize: 8,
-        activeMonths: 1,
-        minimumActiveMonths: 3,
-      },
-      note: "Commission request - Multiple qualification criteria not met",
-    },
-    {
-      id: "PAY-005",
-      user: {
-        name: "David Wilson",
-        email: "david@example.com",
-        level: 3,
-        avatar: "/placeholder-user.jpg",
-        joinDate: "2024-05-12",
-        directRecruits: 12,
-        totalNetwork: 68,
-      },
-      amount: "₦80,000",
-      type: "Monthly Salary",
-      status: "pending",
-      requestDate: "2024-12-27",
-      dueDate: "2024-12-31",
-      bankDetails: {
-        accountName: "David Wilson",
-        accountNumber: "9988776655",
-        bankName: "Zenith Bank",
-        bankCode: "057",
-        verified: true,
-      },
-      teamRevenue: "₦20M",
-      qualificationMet: true,
-      qualificationDetails: {
-        minimumTeamRevenue: "₦15M",
-        actualTeamRevenue: "₦20M",
-        minimumDirectRecruits: 10,
-        actualDirectRecruits: 12,
-        minimumNetworkSize: 60,
-        actualNetworkSize: 68,
-        activeMonths: 7,
-        minimumActiveMonths: 6,
-      },
-      note: "Monthly salary for Level 3 Junior Marketer",
-    },
-  ];
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -295,48 +104,6 @@ export default function PaymentManagement() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Clock className="w-4 h-4" />;
-      case "approved":
-        return <Check className="w-4 h-4" />;
-      case "processing":
-        return <TrendingUp className="w-4 h-4" />;
-      case "completed":
-        return <Check className="w-4 h-4" />;
-      case "rejected":
-        return <X className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
-    }
-  };
-
-  const filteredPayments = payments.filter((payment) => {
-    const matchesSearch =
-      payment.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "all" || payment.status === filterStatus;
-    const matchesAmount =
-      filterAmount === "all" ||
-      (filterAmount === "low" &&
-        Number.parseInt(payment.amount.replace(/[₦,]/g, "")) < 100000) ||
-      (filterAmount === "medium" &&
-        Number.parseInt(payment.amount.replace(/[₦,]/g, "")) >= 100000 &&
-        Number.parseInt(payment.amount.replace(/[₦,]/g, "")) < 500000) ||
-      (filterAmount === "high" &&
-        Number.parseInt(payment.amount.replace(/[₦,]/g, "")) >= 500000);
-    return matchesSearch && matchesStatus && matchesAmount;
-  });
-
-  const handlePaymentAction = (payment: any, action: "approve" | "reject") => {
-    setSelectedPayment(payment);
-    setActionType(action);
-    setActionDialogOpen(true);
-  };
-
   const confirmAction = () => {
     console.log(
       `[v0] ${actionType} payment ${selectedPayment?.id} with note: ${actionNote}`
@@ -346,11 +113,6 @@ export default function PaymentManagement() {
     setActionNote("");
     setSelectedPayment(null);
     setActionType(null);
-  };
-
-  const openPaymentDetails = (payment: any) => {
-    setSelectedPayment(payment);
-    setDetailsDialogOpen(true);
   };
 
   const stats = [
@@ -417,7 +179,7 @@ export default function PaymentManagement() {
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="text-slate-900">
-                Payment Requests ({filteredPayments.length})
+                Payment Requests ({paymentsV2?.total || 0})
               </CardTitle>
             </CardHeader>
 

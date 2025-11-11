@@ -45,7 +45,9 @@ export default function AdminDashboard() {
   const { statsQuery } = useUsers({});
   const { announcememtStatsQuery } = useAnnouncements({});
 
-  const { paymentStatsQuery, paymentListQuery } = useAdminPayments({});
+  const { paymentStatsQuery, paymentListQuery } = useAdminPayments({
+    status: "pending",
+  });
 
   const paymentStats = paymentStatsQuery.data;
 
@@ -141,6 +143,8 @@ export default function AdminDashboard() {
                       amount={pay.amount}
                       type={getEarningType(pay.earningType)}
                       key={pay.id}
+                      id={pay.id}
+                      userId={pay.user.id}
                     />
                   ))}
                 </div>

@@ -39,12 +39,29 @@ export function useAdminPayments(params?: PaymentsFilter) {
       queryClient.invalidateQueries({
         queryKey: [...PAYMENT_QUERY_KEY, "stats"],
       });
-      toast.success("Payment Updated Successfully");
+      toast.success("Payment Processing");
     },
     onError: (error) => {
       toast.error(error.message || "Failed to update payment");
     },
     onMutate: () => toast.success("Payment Updating"),
+  });
+
+  const finalizePaymentMutation = useMutation({
+    mutationFn: paymentsApi.finalize,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...PAYMENT_QUERY_KEY, params],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...PAYMENT_QUERY_KEY, "stats"],
+      });
+      toast.success("Payment Finalization In Progress");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update payment");
+    },
+    onMutate: () => toast.success("Payment Finalizing"),
   });
 
   return {
@@ -58,8 +75,20 @@ export function useAdminPayments(params?: PaymentsFilter) {
       data,
     }: {
       id: string;
-      data: Partial<PaymentsEntity>;
+      data: Partial<PaymentsEntity> & { userId: string };
     }) => updatePaymentMutation.mutateAsync({ id, data }),
+
+    finalizePayment: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { userId: string; otp: string };
+    }) =>
+      finalizePaymentMutation.mutateAsync({
+        id,
+        data,
+      }),
 
     // States
     isPaymentStatsLoading: paymentStatsQuery.isPending,

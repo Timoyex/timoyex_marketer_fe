@@ -76,7 +76,10 @@ export interface AdminPaymentsList {
   earningType: "direct_sales" | "team_commission";
   description?: string;
   note?: string;
+  requireOTP?: boolean;
+  otpExpiresAt?: boolean;
   user: {
+    id: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -137,10 +140,23 @@ export const paymentsApi = {
     data,
   }: {
     id: string;
-    data: Partial<PaymentsEntity>;
+    data: Partial<PaymentsEntity> & { userId: string };
   }): Promise<string> => {
     const response = await apiClient.patch(
       `/v1/admin/payments/${id}/update`,
+      data
+    );
+    return response.data;
+  },
+  finalize: async ({
+    id,
+    data,
+  }: {
+    id: string;
+    data: { userId: string; otp: string };
+  }): Promise<string> => {
+    const response = await apiClient.patch(
+      `/v1/admin/payments/${id}/finalize`,
       data
     );
     return response.data;

@@ -11,55 +11,44 @@ import {
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { DialogClose, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { AdminPaymentsList } from "@/lib/api";
-import { getChangedValues } from "@/lib/form.utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAdminPayments } from "@/hooks/admin-payments.hook";
+import { Input } from "@/components/ui/input";
 
-const paymentSchema = z.object({
-  note: z.string().optional(),
+const OTPSchema = z.object({
+  otp: z.string().optional(),
 });
 
-export const PaymentDialog = ({
+export const OTPDialog = ({
   payment,
-  type,
 }: {
   payment?: Partial<AdminPaymentsList>;
-  type: "approve" | "reject";
 }) => {
-  const { updatePayment } = useAdminPayments({});
-  const paymentForm = useForm<z.infer<typeof paymentSchema>>({
-    resolver: zodResolver(paymentSchema),
+  const { finalizePayment } = useAdminPayments({});
+  const otpForm = useForm<z.infer<typeof OTPSchema>>({
+    resolver: zodResolver(OTPSchema),
     defaultValues: {
-      note: "",
+      otp: "",
     },
   });
 
-  const handleSubmit = async (values: z.infer<typeof paymentSchema>) => {
-    const { dirtyFields } = paymentForm.formState;
-
-    const changedValues = getChangedValues(dirtyFields, values);
-
-    const status = type === "approve" ? "processing" : "rejected";
-    await updatePayment({
+  const handleSubmit = async (values: z.infer<typeof OTPSchema>) => {
+    await finalizePayment({
       id: payment?.id!,
-      data: { note: changedValues.note, status, userId: payment?.user?.id! },
+      data: { otp: values.otp!, userId: payment?.user?.id! },
     });
 
     return;
   };
 
   return (
-    <Form {...paymentForm}>
-      <form
-        onSubmit={paymentForm.handleSubmit(handleSubmit)}
-        className="space-y-4"
-      >
-        {paymentForm.formState.errors.root && (
+    <Form {...otpForm}>
+      <form onSubmit={otpForm.handleSubmit(handleSubmit)} className="space-y-4">
+        {otpForm.formState.errors.root && (
           <Alert className="border-red-200 bg-red-50 mb-7 mt-2 p-4">
             <AlertDescription className="text-red-700">
-              {paymentForm.formState.errors.root.message}
+              {otpForm.formState.errors.root.message}
             </AlertDescription>
           </Alert>
         )}
@@ -84,23 +73,16 @@ export const PaymentDialog = ({
         </div>
 
         <FormField
-          control={paymentForm.control}
-          name="note"
+          control={otpForm.control}
+          name="otp"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="block text-sm font-medium text-slate-700 mb-2">
-                {type === "approve" ? "Approval Note" : "Rejection Reason"}
-              </FormLabel>
+              <FormLabel className="block text-sm font-medium text-slate-700 mb-2"></FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder={
-                    type === "approve"
-                      ? "Add approval note..."
-                      : "Explain reason for rejection..."
-                  }
-                  rows={3}
+                <Input
+                  placeholder="Enter OTP code here"
                   {...field}
-                  disabled={paymentForm.formState.isSubmitting}
+                  disabled={otpForm.formState.isSubmitting}
                 />
               </FormControl>
               <FormMessage />
@@ -114,10 +96,12 @@ export const PaymentDialog = ({
           </DialogClose>
           <Button
             variant="outline"
-            disabled={paymentForm.formState.isSubmitting}
+            disabled={
+              otpForm.formState.isSubmitting || otpForm.getValues("otp") === ""
+            }
             type="submit"
           >
-            {type === "approve" ? "Approve Payment" : "Reject Request"}
+            Approve Payment
           </Button>
         </DialogFooter>
       </form>
