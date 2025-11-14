@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import {
   Eye,
@@ -12,8 +14,8 @@ import {
   Layers2,
   ArrowRight,
 } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
+import "react-phone-number-input/style.css";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -59,9 +61,9 @@ export const registerSchema = z
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
     memberOf: z.string().min(2, "Upline Code must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
-    phone: z
-      .string()
-      .regex(/^(\+234|234|0)[789][01]\d{8}$/, "Invalid Nigerian phone number"),
+    phone: z.string().refine((value) => isValidPhoneNumber(value), {
+      message: "Please enter a valid phone number",
+    }),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -137,7 +139,7 @@ export default function AuthPage() {
 
   const handleRegister = async (payload: z.infer<typeof registerSchema>) => {
     try {
-      const { confirmPassword, agreeToTerms, ...values } = payload;
+      const { confirmPassword, ...values } = payload;
 
       await register(values);
       localStorage.setItem("verification-email", values.email);
@@ -473,15 +475,18 @@ export default function AuthPage() {
                         <FormItem className="mb-4 gap-1">
                           <FormLabel>Phone</FormLabel>
                           <FormControl>
-                            <div className="relative">
-                              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                {...field}
-                                type="tel"
-                                placeholder="+234 800 000 0000"
-                                className="pl-10"
-                              />
-                            </div>
+                            <PhoneInput
+                              {...field}
+                              defaultCountry="NG"
+                              international
+                              countryCallingCodeEditable={false}
+                              placeholder="+234 800 000 0000"
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+                              numberInputProps={{
+                                className:
+                                  "flex-1 outline-none bg-transparent pl-2",
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -555,7 +560,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-
+                    {/* 
                     <FormField
                       control={registerForm.control}
                       name="agreeToTerms"
@@ -586,7 +591,7 @@ export default function AuthPage() {
                           <FormMessage />
                         </FormItem>
                       )}
-                    />
+                    /> */}
 
                     <Button
                       type="submit"
