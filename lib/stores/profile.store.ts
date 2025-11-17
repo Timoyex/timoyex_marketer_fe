@@ -52,6 +52,14 @@ export interface UserProfile {
   levelUpdatedAt?: string;
   directCount?: number;
   totalDownlineCount?: number;
+  upline?: {
+    id: string;
+    email: string;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    phone?: string;
+  };
 }
 
 interface ProfileState {

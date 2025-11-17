@@ -10,7 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserPlus, Network, Share } from "lucide-react";
+import {
+  UserPlus,
+  Network,
+  Share,
+  User,
+  UserCircle,
+  Mail,
+  Phone,
+} from "lucide-react";
 import { InfoCard } from "@/components/custom/infocard";
 import { copyToClipboard } from "@/lib/utils";
 import { useProfile } from "@/hooks/profile.hook";
@@ -97,7 +105,7 @@ export function TeamSection() {
     downlineMembersV2,
     downlineIsLoadingV2,
   } = useTeam(profileQuery.data?.marketerCode || "", {
-    limit: 2,
+    limit: 5,
     cursor: pagination.cursor,
   }); //tanstack query
 
@@ -124,6 +132,8 @@ export function TeamSection() {
       desc: "Including sub-levels",
     },
   ];
+
+  const upline = profileQuery.data?.upline || null;
 
   return (
     <div className="space-y-6">
@@ -161,6 +171,63 @@ export function TeamSection() {
             />
           ))}
       </div>
+
+      {upline && (
+        <Card className="bg-card border-border shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-card-foreground flex items-center gap-2">
+              <UserCircle className="h-5 w-5" />
+              Your Upline
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Name
+                  </p>
+                  <p className="text-base font-semibold text-foreground capitalize">
+                    {`${upline.firstName || ""} ${upline.lastName || ""}` ||
+                      "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Mail className="h-4 w-4 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Email
+                  </p>
+                  <p className="text-base font-semibold text-foreground break-all">
+                    {upline.email || "N/A"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Phone className="h-4 w-4 text-primary" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Phone
+                  </p>
+                  <p className="text-base font-semibold text-foreground">
+                    {upline.phone || "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters and Search */}
       <Card className="bg-card border-border shadow-sm">

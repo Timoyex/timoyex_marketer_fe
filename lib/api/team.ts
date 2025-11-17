@@ -6,6 +6,7 @@ export interface Member {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   marketerCode: string;
   status: string;
   createdAt: string;
@@ -14,6 +15,10 @@ export interface Member {
   downline?: number;
   directCount?: number;
   totalDownlineCount?: number;
+  upline?: {
+    firstName: string;
+    lastName: string;
+  };
 }
 
 export interface TeamQuery {

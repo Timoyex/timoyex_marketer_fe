@@ -37,6 +37,7 @@ import { EarningHistoryEntity, PaymentsEntity } from "@/lib/api";
 import { getEarningType } from "@/app/admin/dashboard/page";
 import { EarningCard } from "./request-card";
 import { DialogContainer } from "@/components/custom/dialog-container";
+import { SkeletalChartCard } from "@/components/custom/skeleton";
 
 const EmptyState = () => (
   <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -94,7 +95,7 @@ function transformBreakdownToChart(
 }
 
 export function EarningsSection() {
-  const { earningsOverviewQuery } = useEarnings({
+  const { earningsOverviewQuery, isOverviewLoading } = useEarnings({
     includeStats: true,
   });
   const { earningsHistoryQuery, isHistoryLoading } = useEarnings({
@@ -184,10 +185,12 @@ export function EarningsSection() {
   const summary = [
     {
       title: "Total Earned",
-      value:
-        "₦" +
-          earningsOverviewQuery.data?.summary?.totalEarnings?.toLocaleString() ||
-        0,
+      value: Number(
+        earningsOverviewQuery.data?.summary?.totalEarnings || 0
+      )?.toLocaleString("en-NG", {
+        style: "currency",
+        currency: "NGN",
+      }),
       icon: <Wallet className="h-4 w-4 text-blue-600" />,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
@@ -196,7 +199,10 @@ export function EarningsSection() {
     },
     {
       title: "Pending Withdrawals",
-      value: "₦" + Number(paymentHistoryData?.pending || 0).toLocaleString(),
+      value: Number(paymentHistoryData?.pending || 0)?.toLocaleString("en-NG", {
+        style: "currency",
+        currency: "NGN",
+      }),
       icon: <Clock className="h-4 w-4 text-purple-600" />,
       iconBg: "bg-purple-100",
       iconColor: "text-purple-600",
@@ -205,7 +211,13 @@ export function EarningsSection() {
     },
     {
       title: "Last Payout",
-      value: "₦" + Number(paymentHistoryData?.lastPayout || 0).toLocaleString(),
+      value: Number(paymentHistoryData?.lastPayout || 0)?.toLocaleString(
+        "en-NG",
+        {
+          style: "currency",
+          currency: "NGN",
+        }
+      ),
       icon: <CreditCard className="h-4 w-4 text-orange-600" />,
       iconBg: "bg-orange-100",
       iconColor: "text-orange-600",
@@ -255,137 +267,144 @@ export function EarningsSection() {
 
       <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Earnings Trend Chart */}
-        <Card className="bg-card border-border shadow-sm relative">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">
-              Earnings Trend
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Monthly commission and bonus breakdown (Approved Earnings)
-            </p>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={chartConfig}
-              className="h-80 w-full overflow-hidden"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyEarnings}>
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: " var(--muted-foreground)" }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: " var(--muted-foreground)" }}
-                    tickFormatter={(value) => `₦${value}`}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
 
-                  <Legend />
+        {isOverviewLoading && <SkeletalChartCard type="line" />}
+        {!isOverviewLoading && (
+          <Card className="bg-card border-border shadow-sm relative">
+            <CardHeader>
+              <CardTitle className="text-card-foreground">
+                Earnings Trend
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Monthly commission and bonus breakdown (Approved Earnings)
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={chartConfig}
+                className="h-80 w-full overflow-hidden"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlyEarnings}>
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: " var(--muted-foreground)" }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: " var(--muted-foreground)" }}
+                      tickFormatter={(value) => `₦${value}`}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
 
-                  <Line
-                    type="monotone"
-                    dataKey="direct_sales"
-                    stroke="var(--chart-4)"
-                    strokeWidth={2}
-                    dot={{ fill: "var(--chart-4)", strokeWidth: 2, r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="team_commission"
-                    stroke="var(--chart-3)"
-                    strokeWidth={2}
-                    dot={{ fill: "var(--chart-3)", strokeWidth: 2, r: 4 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke="var(--primary)"
-                    strokeWidth={3}
-                    dot={{ fill: "var(--primary)", strokeWidth: 2, r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+                    <Legend />
+
+                    <Line
+                      type="monotone"
+                      dataKey="direct_sales"
+                      stroke="var(--chart-4)"
+                      strokeWidth={2}
+                      dot={{ fill: "var(--chart-4)", strokeWidth: 2, r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="team_commission"
+                      stroke="var(--chart-3)"
+                      strokeWidth={2}
+                      dot={{ fill: "var(--chart-3)", strokeWidth: 2, r: 4 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      stroke="var(--primary)"
+                      strokeWidth={3}
+                      dot={{ fill: "var(--primary)", strokeWidth: 2, r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Commission Breakdown */}
-        <Card className="bg-card border-border shadow-sm relative">
-          <CardHeader>
-            <CardTitle className="text-card-foreground">
-              Commission Breakdown
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Revenue sources distribution
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={commissionBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={2}
-                      dataKey="amount"
-                    >
-                      {commissionBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="bg-background border border-border rounded-lg p-3 shadow-md">
-                              <p className="font-medium">{data.source}</p>
-                              <p className="text-sm text-muted-foreground">
-                                ₦{data.amount.toLocaleString()} (
-                                {data.percentage}%)
-                              </p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-2">
-                {commissionBreakdown.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: item.color }}
+        {isOverviewLoading && <SkeletalChartCard type="pie" />}
+        {!isOverviewLoading && (
+          <Card className="bg-card border-border shadow-sm relative">
+            <CardHeader>
+              <CardTitle className="text-card-foreground">
+                Commission Breakdown
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Revenue sources distribution
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={commissionBreakdown}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={2}
+                        dataKey="amount"
+                      >
+                        {commissionBreakdown.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-background border border-border rounded-lg p-3 shadow-md">
+                                <p className="font-medium">{data.source}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  ₦{data.amount.toLocaleString()} (
+                                  {data.percentage}%)
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
                       />
-                      <span className="text-sm text-card-foreground">
-                        {item.source}
-                      </span>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="space-y-2">
+                  {commissionBreakdown.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        />
+                        <span className="text-sm text-card-foreground">
+                          {item.source}
+                        </span>
+                      </div>
+                      <div className="text-sm font-medium text-card-foreground">
+                        ₦{item.amount.toLocaleString()} ({item.percentage}%)
+                      </div>
                     </div>
-                    <div className="text-sm font-medium text-card-foreground">
-                      ₦{item.amount.toLocaleString()} ({item.percentage}%)
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Payment History */}

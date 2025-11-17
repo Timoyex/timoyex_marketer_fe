@@ -7,6 +7,7 @@ import {
   Activity,
   UserCircle2,
   Users,
+  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -103,6 +104,32 @@ export const teamColumns: ColumnDef<Member>[] = [
             <div className="text-sm text-muted-foreground">{member.email}</div>
           </div>
         </div>
+      );
+    },
+  },
+  {
+    accessorKey: "phone",
+    accessorFn: (row) => {
+      const fullName = `${row.firstName ?? ""} ${row.lastName ?? ""}`.trim();
+      // if no name, fall back to email for sorting/filtering
+      return fullName || row.email || "";
+    },
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          className="hover:bg-transparent p-0 h-auto font-semibold -ml-4"
+        >
+          Phone
+          <Phone className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const member = row.original;
+
+      return (
+        <div className="flex items-center gap-3">{member.phone || "N/A"}</div>
       );
     },
   },
