@@ -71,9 +71,7 @@ export const registerSchema = z
         message: "Password must contain uppercase, lowercase, and number",
       }),
     confirmPassword: z.string(),
-    agreeToTerms: z.boolean().refine((val) => val === true, {
-      message: "You must agree to the terms and conditions",
-    }),
+    
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
@@ -113,8 +111,7 @@ export default function AuthPage() {
       phone: "",
       memberOf: referralCode,
       password: "",
-      confirmPassword: "",
-      agreeToTerms: false,
+      confirmPassword: ""
     },
   });
   const adminLoginForm = useForm<z.infer<typeof adminLoginSchema>>({
