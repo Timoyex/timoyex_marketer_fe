@@ -788,31 +788,23 @@ export function ProfileSection() {
                             <SelectTrigger>
                               <SelectValue
                                 placeholder={
-                                  profileQuery.data?.bankAccount?.bankName ||
-                                  "Select your bank"
+                                  isBanksLoading
+                                    ? "Loading banks..."
+                                    : banksQuery.isError
+                                    ? "Error loading banks"
+                                    : banksQuery.data?.length === 0
+                                    ? "No banks available"
+                                    : profileQuery.data?.bankAccount
+                                        ?.bankName || "Select your bank"
                                 }
                               />
                             </SelectTrigger>
                             <SelectContent>
-                              {isBanksLoading ? (
-                                <SelectItem value="" disabled>
-                                  Loading banks...
+                              {banksQuery.data?.map((bank) => (
+                                <SelectItem key={bank.id} value={bank.name}>
+                                  {bank.name}
                                 </SelectItem>
-                              ) : banksQuery.isError ? (
-                                <SelectItem value="" disabled>
-                                  Error loading banks
-                                </SelectItem>
-                              ) : banksQuery.data?.length === 0 ? (
-                                <SelectItem value="" disabled>
-                                  No banks available
-                                </SelectItem>
-                              ) : (
-                                banksQuery.data?.map((bank) => (
-                                  <SelectItem key={bank.id} value={bank.name}>
-                                    {bank.name}
-                                  </SelectItem>
-                                ))
-                              )}
+                              ))}
                             </SelectContent>
                           </Select>
                           <FormMessage />

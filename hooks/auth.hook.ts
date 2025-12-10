@@ -85,7 +85,9 @@ export function useAuth() {
         access_token: data.data.access_token,
         refresh_token: data.data.refresh_token,
       });
-      toast.success("Account created successfully! Please Log In");
+      toast.success(
+        "Account created successfully! Please Verify Your Account."
+      );
 
       setTimeout(() => {
         console.log("verify please");
@@ -164,6 +166,9 @@ export function useAuth() {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
+    onMutate: () => {
+      toast.success("Logging out...");
+    },
     onSuccess: () => {
       logout();
       toast.success("Logged out successfully");
