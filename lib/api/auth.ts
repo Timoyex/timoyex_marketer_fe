@@ -71,7 +71,7 @@ export const authApi = {
   }): Promise<void> => {
     await apiClient.post("/v1/auth/logout", {
       refresh_token: token,
-      isAdmin: role && role === "admin",
+      isAdmin: role && role.toLowerCase() === "admin",
     });
   },
 

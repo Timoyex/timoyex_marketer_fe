@@ -172,12 +172,11 @@ export function useAuth() {
     onSuccess: () => {
       logout();
       toast.success("Logged out successfully");
-      return router.push("/login");
+      return;
     },
     onError: () => {
-      // Still logout locally even if API call fails
       logout();
-      return router.push("/login");
+      return;
     },
   });
 
