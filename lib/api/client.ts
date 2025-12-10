@@ -22,6 +22,7 @@ const AUTH_ENDPOINTS = [
   "/v1/login",
   "/v1/refresh",
   "/v1/register",
+  "/v2/register",
   "/v1/refresh",
   "/v1/forgot-password",
   "/v1/reset-password",
@@ -66,6 +67,81 @@ apiClient.interceptors.request.use(
 );
 
 // RESPONSE INTERCEPTOR: Handle 401 errors with automatic token refresh
+// apiClient.interceptors.response.use(
+//   (response: AxiosResponse) => response,
+//   async (error: AxiosError) => {
+//     const originalRequest = error.config as InternalAxiosRequestConfig & {
+//       _retry?: boolean;
+//     };
+
+//     // Handle 401 errors with token refresh
+//     if (error.response?.status === 401 && !originalRequest._retry) {
+//       // If already refreshing, let TanStack Query handle the retry
+//       if (isRefreshing) {
+//         return Promise.reject(error);
+//       }
+
+//       originalRequest._retry = true;
+//       isRefreshing = true;
+
+//       const refreshToken = useAuthStore.getState().refresh_token;
+
+//       if (!refreshToken) {
+//         isRefreshing = false;
+//         useAuthStore.getState().logout();
+
+//         // Invalidate all queries on logout
+//         if (typeof window !== "undefined") {
+//           const queryClient = (window as any).__REACT_QUERY_CLIENT__;
+//           if (queryClient) {
+//             queryClient.clear();
+//           }
+
+//           window.location.href = "/login";
+//         }
+
+//         return Promise.reject(error);
+//       }
+
+//       try {
+//         console.log("Refreshing access token...");
+//         const response = await authApi.refreshToken(refreshToken);
+
+//         const { access_token } = response.data;
+//         // Update store with new token
+//         useAuthStore.getState().setAccessToken(access_token);
+
+//         // Retry original request with new token
+//         if (originalRequest.headers) {
+//           originalRequest.headers.Authorization = `Bearer ${access_token}`;
+//         }
+
+//         isRefreshing = false;
+//         return apiClient(originalRequest);
+//       } catch (refreshError) {
+//         console.error("Token refresh failed");
+//         isRefreshing = false;
+//         useAuthStore.getState().logout();
+
+//         // Clear TanStack Query cache on auth failure
+//         if (typeof window !== "undefined") {
+//           const queryClient = (window as any).__REACT_QUERY_CLIENT__;
+//           if (queryClient) {
+//             queryClient.clear();
+//           }
+
+//           window.location.href = "/login";
+//         }
+
+//         return Promise.reject(refreshError);
+//       }
+//     }
+
+//     return Promise.reject(error);
+//   }
+// );
+
+// RESPONSE INTERCEPTOR: Handle 401 errors with automatic token refresh
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error: AxiosError) => {
@@ -96,7 +172,23 @@ apiClient.interceptors.response.use(
             queryClient.clear();
           }
 
-          window.location.href = "/login";
+          // ✅ ONLY redirect if NOT already on login/auth pages
+          const currentPath = window.location.pathname;
+          const authPages = [
+            "/login",
+            "/register",
+            "/verify",
+            "/forgot-password",
+            "/reset-password",
+          ];
+          const isOnAuthPage = authPages.some((page) =>
+            currentPath.startsWith(page)
+          );
+
+          if (!isOnAuthPage) {
+            console.log("from client");
+            window.location.href = "/login";
+          }
         }
 
         return Promise.reject(error);
@@ -129,7 +221,23 @@ apiClient.interceptors.response.use(
             queryClient.clear();
           }
 
-          window.location.href = "/login";
+          // ✅ ONLY redirect if NOT already on login/auth pages
+          const currentPath = window.location.pathname;
+          const authPages = [
+            "/login",
+            "/register",
+            "/verify",
+            "/forgot-password",
+            "/reset-password",
+          ];
+          const isOnAuthPage = authPages.some((page) =>
+            currentPath.startsWith(page)
+          );
+
+          if (!isOnAuthPage) {
+            console.log("from client");
+            window.location.href = "/login";
+          }
         }
 
         return Promise.reject(refreshError);

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FE_URL } from "@/app.config";
 
 import { Suspense } from "react";
-import LandingPage from "@/app/page";
+// import LandingPage from "@/app/page";
 import { ForgotPasswordPage } from "./components/forgot-password";
 
 export const metadata: Metadata = {
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 const Page = () => {
   return (
     <div className="w-full h-full">
-      <Suspense fallback={<LandingPage />}>
+      <Suspense fallback={<br />}>
         <ForgotPasswordPage />
       </Suspense>
     </div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { FE_URL } from "@/app.config";
 import { Suspense } from "react";
-import LandingPage from "../../page";
+// import LandingPage from "../../page";
 import AuthPage from "../components/auth.new";
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 const Page = () => {
   return (
     <div className="w-full h-full">
-      <Suspense fallback={<LandingPage />}>
+      <Suspense fallback={<br />}>
         <AuthPage />
       </Suspense>
     </div>

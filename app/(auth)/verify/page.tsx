@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FE_URL } from "@/app.config";
 import EmailVerifiedPage from "./components/verify";
 import { Suspense } from "react";
-import LandingPage from "@/app/page";
+// import LandingPage from "@/app/page";
 
 export const metadata: Metadata = {
   title: "Verification | Affiliate Dashboard",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 const Page = () => {
   return (
     <div className="w-full h-full">
-      <Suspense fallback={<LandingPage />}>
+      <Suspense fallback={<br />}>
         <EmailVerifiedPage />
       </Suspense>
     </div>

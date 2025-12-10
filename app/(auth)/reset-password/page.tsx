@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { FE_URL } from "@/app.config";
 
 import { Suspense } from "react";
-import LandingPage from "@/app/page";
+// import LandingPage from "@/app/page";
 import { ResetPasswordPage } from "./components/reset-password";
 
 export const metadata: Metadata = {
@@ -51,7 +51,7 @@ const Page = async ({ searchParams }: Props) => {
 
   return (
     <div className="w-full h-full">
-      <Suspense fallback={<LandingPage />}>
+      <Suspense fallback={<br />}>
         <ResetPasswordPage token={token} />
       </Suspense>
     </div>
