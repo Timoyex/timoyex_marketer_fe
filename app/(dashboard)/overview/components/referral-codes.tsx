@@ -51,7 +51,7 @@ const ReferralCodes = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="flex-1 bg-transparent text-xs sm:text-sm h-8 sm:h-9"
+                className="flex-1 bg-transparent text-xs sm:text-sm h-8 sm:h-9 truncate"
                 onClick={() =>
                   navigator.share?.({ text: referralCodes.marketer }) ??
                   copyToClipboard(referralCodes.marketer)
