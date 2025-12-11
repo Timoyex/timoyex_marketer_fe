@@ -275,22 +275,45 @@ export function Sidebar() {
               <div className="p-4 border-b border-sidebar-border">
                 <div className="flex flex-col items-center text-center space-y-2">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src="/professional-headshot.png" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage
+                      src={
+                        (profile?.avatar as string) || "/placeholder-user.jpg"
+                      }
+                    />
+                    <AvatarFallback
+                      className={cn(
+                        sidebarCollapsed ? "text-xs" : "text-sm lg:text-lg"
+                      )}
+                    >
+                      <AvatarImage src="/placeholder-user.jpg" />
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="font-semibold text-sidebar-foreground text-sm">
-                      John Doe
+                      {isLoading ? (
+                        <Skeleton className="inline-block" />
+                      ) : (
+                        `${profile?.firstName || ""} ${
+                          profile?.lastName || ""
+                        } `
+                      )}
                     </h3>
-                    <p className="text-xs text-muted-foreground">Level 2</p>
+                    <p className="text-xs text-muted-foreground">
+                      {" "}
+                      {isLoading ? (
+                        <Skeleton className="inline-block" />
+                      ) : (
+                        `Level ${profileQuery.data?.level || 0}`
+                      )}
+                    </p>
                   </div>
                   <div className="flex gap-1 flex-wrap justify-center">
-                    <Badge variant="secondary" className="text-xs">
+                    {/* <Badge variant="secondary" className="text-xs">
                       ⭐ Top Recruiter
                     </Badge>
                     <Badge variant="secondary" className="text-xs">
                       🔥 Active Marketer
-                    </Badge>
+                    </Badge> */}
                   </div>
                 </div>
               </div>
