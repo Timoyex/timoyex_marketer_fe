@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -10,7 +10,6 @@ import {
   Mail,
   Lock,
   User,
-  Phone,
   Layers2,
   ArrowRight,
 } from "lucide-react";
@@ -18,7 +17,6 @@ import "react-phone-number-input/style.css";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
@@ -40,6 +38,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import ReCAPTCHA from "react-google-recaptcha";
+import { GOOGLE_RECAPTCHA_SITE_KEY } from "@/app.config";
 
 // Schemas
 export const loginSchema = z.object({
@@ -71,7 +71,6 @@ export const registerSchema = z
         message: "Password must contain uppercase, lowercase, and number",
       }),
     confirmPassword: z.string(),
-    
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ["confirmPassword"],
@@ -96,6 +95,9 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [activeTab, setActiveTab] = useState(tag);
+  const [recaptchaValue, setRecaptchaValue] = useState("");
+
+  const recaptchaRef = useRef(null);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -111,7 +113,7 @@ export default function AuthPage() {
       phone: "",
       memberOf: referralCode,
       password: "",
-      confirmPassword: ""
+      confirmPassword: "",
     },
   });
   const adminLoginForm = useForm<z.infer<typeof adminLoginSchema>>({
@@ -125,17 +127,35 @@ export default function AuthPage() {
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
+      const verifyRes = await fetch("/api/verify-recaptcha", {
+        method: "POST",
+        headers: {},
+        body: JSON.stringify({ token: recaptchaValue }),
+      });
+
+      if (!verifyRes.ok) {
+        toast.error("reCAPTCHA verification failed. Please try again.");
+        return;
+      }
+
       await login(values);
     } catch (error) {
       toast.error("Login failed. Please try again.");
-      loginForm.setError("root", {
-        message: "Invalid credentials. Please try again.",
-      });
     }
   };
 
   const handleRegister = async (payload: z.infer<typeof registerSchema>) => {
     try {
+      const verifyRes = await fetch("/api/verify-recaptcha", {
+        method: "POST",
+        headers: {},
+        body: JSON.stringify({ token: recaptchaValue }),
+      });
+
+      if (!verifyRes.ok) {
+        toast.error("reCAPTCHA verification failed. Please try again.");
+        return;
+      }
       const { confirmPassword, ...values } = payload;
 
       await register(values);
@@ -151,6 +171,10 @@ export default function AuthPage() {
   const handleTabChange = (value: string) => {
     // Navigate to the new auth route
     router.push(`/${value}`);
+  };
+
+  const handleRecaptchaChange = (value: string | null) => {
+    setRecaptchaValue(value || "");
   };
 
   return (
@@ -337,6 +361,14 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+
+                    <div className="flex justify-center items-center w-full p-4 m-auto ">
+                      <ReCAPTCHA
+                        ref={recaptchaRef}
+                        sitekey={GOOGLE_RECAPTCHA_SITE_KEY || ""}
+                        onChange={handleRecaptchaChange}
+                      />
+                    </div>
 
                     <Button
                       type="submit"
@@ -590,6 +622,14 @@ export default function AuthPage() {
                       )}
                     /> */}
 
+                    <div className="flex justify-center items-center w-full p-4 m-auto ">
+                      <ReCAPTCHA
+                        ref={recaptchaRef}
+                        sitekey={GOOGLE_RECAPTCHA_SITE_KEY || ""}
+                        onChange={handleRecaptchaChange}
+                      />
+                    </div>
+
                     <Button
                       type="submit"
                       disabled={registerForm.formState.isSubmitting}
@@ -716,6 +756,16 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+
+                    <div className="flex justify-center items-center w-full p-4 m-auto ">
+                      <ReCAPTCHA
+                        ref={recaptchaRef}
+                        sitekey={GOOGLE_RECAPTCHA_SITE_KEY || ""}
+                        onChange={handleRecaptchaChange}
+                        theme="dark"
+                      />
+                    </div>
+
                     {/* Sign In Button */}
                     <Button
                       type="submit"
