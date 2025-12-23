@@ -26,6 +26,15 @@ export const EmptyState = () => (
     </p>
   </div>
 );
+export const LoadingState = () => (
+  <div className="flex flex-col items-center justify-center py-16 px-4">
+    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+    <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center mb-4">
+      <UserCircle2 className="h-12 w-12 text-muted-foreground" />
+    </div>
+    <h3 className="text-lg font-semibold mb-2">Loading Team Members.</h3>
+  </div>
+);
 
 // Utility functions
 const formatDate = (dateString: string) => {

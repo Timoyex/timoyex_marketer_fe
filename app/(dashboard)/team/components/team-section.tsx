@@ -24,7 +24,7 @@ import { copyToClipboard } from "@/lib/utils";
 import { useProfile } from "@/hooks/profile.hook";
 import { useTeam } from "@/hooks/team.hook";
 import { SkeletalInfoCard } from "@/components/custom/skeleton";
-import { EmptyState, teamColumns } from "./columns";
+import { EmptyState, LoadingState, teamColumns } from "./columns";
 import { DataTable } from "@/components/custom/dataTable";
 import { useState } from "react";
 import { useCursorPagination } from "@/lib/pagination-fn";
@@ -242,7 +242,7 @@ export function TeamSection() {
             <DataTable
               data={[]}
               columns={teamColumns}
-              emptyState={<EmptyState />}
+              emptyState={<LoadingState />}
             />
           )}
           {!downlineIsLoadingV2 && (
