@@ -211,13 +211,12 @@ export function EarningsSection() {
     },
     {
       title: "Last Payout",
-      value: Number(paymentHistoryData?.lastPayout || 0)?.toLocaleString(
-        "en-NG",
-        {
-          style: "currency",
-          currency: "NGN",
-        }
-      ),
+      value: Number(
+        paymentHistoryData?.lastPayout?.amount || 0
+      )?.toLocaleString("en-NG", {
+        style: "currency",
+        currency: "NGN",
+      }),
       icon: <CreditCard className="h-4 w-4 text-orange-600" />,
       iconBg: "bg-orange-100",
       iconColor: "text-orange-600",

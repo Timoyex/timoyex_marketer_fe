@@ -30,10 +30,18 @@ export interface WithdrawalEntity {
   reference: string;
 }
 
+export interface LastPayoutEntity {
+  id: string;
+  amount: number;
+  status: PaymentStatus;
+  processedAt: string;
+  reference: string;
+}
+
 export interface PaymentsHistoryResponse extends EndpointResponse {
   data: {
     payments: Array<PaymentsEntity>;
-    lastPayout?: number | null;
+    lastPayout?: LastPayoutEntity;
     pending: number;
     nextCursor?: string;
     prevCursor?: string;
