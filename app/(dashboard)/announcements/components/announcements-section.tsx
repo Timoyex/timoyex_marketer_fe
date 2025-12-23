@@ -14,6 +14,7 @@ import {
   Award,
   DollarSign,
   Check,
+  Banknote,
 } from "lucide-react";
 import { InfoCard } from "@/components/custom/infocard";
 import { formatDate } from "@/lib/utils";
@@ -33,6 +34,7 @@ type NotificationType =
   | "action"
   | "commission"
   | "bonus"
+  | "earning"
   | "maintenance";
 
 const getNotificationIcon = (type: NotificationType | unknown) => {
@@ -41,6 +43,8 @@ const getNotificationIcon = (type: NotificationType | unknown) => {
       return <Award className="h-5 w-5 text-purple-600" />;
     case "payment":
       return <DollarSign className="h-5 w-5 text-green-600" />;
+    case "earning":
+      return <Banknote className="h-5 w-5 text-cyan-600" />;
     case "team":
       return <User className="h-5 w-5 text-blue-600" />;
     case "action":
@@ -67,12 +71,16 @@ const getPriorityColor = (
   }
 };
 
-const getTypeColor = (type: "payment" | "team" | "achievement" | "action") => {
+const getTypeColor = (
+  type: "payment" | "team" | "achievement" | "action" | "earning"
+) => {
   switch (type) {
     case "achievement":
       return "bg-purple-100 text-purple-800 border-purple-200";
     case "payment":
       return "bg-green-100 text-green-800 border-green-200";
+    case "earning":
+      return "bg-cyan-100 text-cyan-800 border-cyan-200";
     case "team":
       return "bg-blue-100 text-blue-800 border-blue-200";
     case "action":
