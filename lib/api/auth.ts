@@ -115,7 +115,7 @@ export const authApi = {
     oldPwd: string;
     newPwd: string;
   }): Promise<{ message: string }> => {
-    const response = await apiClient.post("/v1/auth/change-password", {
+    const response = await apiClient.patch("/v1/auth/change-password", {
       oldPwd,
       newPwd,
     });
