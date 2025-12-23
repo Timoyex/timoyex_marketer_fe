@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { CheckCircle2, Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks";
+import { useRouter } from "next/navigation";
 
 const changePwdSchema = z
   .object({
@@ -41,7 +42,9 @@ const changePwdSchema = z
   });
 
 export const ChangePasswordModal = () => {
-  const { changePwd, changePwdError, changePwdSuccess } = useAuth();
+  const { changePwd, changePwdError, changePwdSuccess, logout } = useAuth();
+
+  const router = useRouter();
 
   const changePwdForm = useForm<z.infer<typeof changePwdSchema>>({
     resolver: zodResolver(changePwdSchema),
@@ -57,6 +60,9 @@ export const ChangePasswordModal = () => {
       const { confirmPwd, ...values } = payload;
 
       await changePwd(values);
+      await logout();
+
+      router.push("/login");
     } catch (error) {
       changePwdForm.setError("root", {
         message: `${changePwdError?.response?.data.message || ""}`,

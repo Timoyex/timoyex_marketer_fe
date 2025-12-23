@@ -208,7 +208,7 @@ export function useAuth() {
   const changePwdMutation = useMutation({
     mutationFn: authApi.changePassword,
     onSuccess: () => {
-      toast.success("Password has been changed");
+      toast.success("Password has been changed.Please login again.");
     },
     onError: (error: any) => {
       toast.error("Failed to change password. Please try again in a while.");
