@@ -33,8 +33,6 @@ export default function EmailVerifiedPage() {
       return;
     }
 
-    //test
-
     verify({ token });
   }, [token]); // Only depend on token
 
