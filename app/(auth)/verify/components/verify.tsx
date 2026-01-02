@@ -33,6 +33,8 @@ export default function EmailVerifiedPage() {
       return;
     }
 
+    // testing vercel fix
+
     verify({ token });
   }, [token]); // Only depend on token
 
