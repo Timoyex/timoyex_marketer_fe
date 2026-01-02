@@ -87,7 +87,7 @@ export default function AuthPage() {
     notFound();
   }
 
-  const { login, register } = useAuth();
+  const { login, register, registerError } = useAuth();
 
   const referralCode =
     searchParams.get("ref") || searchParams.get("code") || "";
@@ -161,9 +161,8 @@ export default function AuthPage() {
       await register(values);
       localStorage.setItem("verification-email", values.email);
     } catch (error) {
-      toast.error("Registration failed. Please try again.");
       registerForm.setError("root", {
-        message: "Registration failed. Please try again.",
+        message: registerError,
       });
     }
   };

@@ -96,6 +96,7 @@ export function useAuth() {
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || "Registration failed";
+      console.log(message);
       toast.error(message);
     },
     onSettled: () => {
@@ -240,7 +241,7 @@ export function useAuth() {
 
     // States
     loginError: loginMutation.error,
-    registerError: registerMutation.error,
+    registerError: registerMutation.error?.response?.data?.message,
     isLoginPending: loginMutation.isPending,
     isRegisterPending: registerMutation.isPending,
     verifyError: verifyMutation?.error?.response?.data?.message,

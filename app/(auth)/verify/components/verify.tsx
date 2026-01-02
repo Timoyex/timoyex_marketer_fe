@@ -32,30 +32,33 @@ export default function EmailVerifiedPage() {
     if (!token) {
       return;
     }
-    let timer: NodeJS.Timeout;
+
     verify({ token });
+  }, [token]); // Only depend on token
 
-    // Start countdown if successful
-    if (verifySuccess) {
-      localStorage.removeItem("verification-email");
-      timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            window.location.href = "/overview";
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      timer;
+  useEffect(() => {
+    // Handle countdown in separate effect
+    if (!verifySuccess) {
+      return;
     }
 
+    localStorage.removeItem("verification-email");
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          window.location.href = "/overview";
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     return () => {
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
     };
-  }, [verifySuccess]);
+  }, [verifySuccess]); // Only run when verifySuccess changes
 
   const handleResendVerification = () => {
     router.push("/verify-email");
@@ -196,7 +199,6 @@ export default function EmailVerifiedPage() {
               <CardTitle className="text-2xl text-orange-700">
                 You are already verified
               </CardTitle>
-              <CardDescription>You have f</CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-6">
