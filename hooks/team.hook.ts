@@ -1,7 +1,7 @@
-import { teamApi } from "@/lib/api/team";
+import { SearchTeamQuery, teamApi } from "@/lib/api/team";
 import { useQuery } from "@tanstack/react-query";
 
-export function useTeam(ref: string, params = {}) {
+export function useTeam(ref: string, params?: SearchTeamQuery) {
   const directMembersQuery = useQuery({
     queryKey: ["team", "direct", ref, params],
     queryFn: async () => {
@@ -12,15 +12,6 @@ export function useTeam(ref: string, params = {}) {
     enabled: !!ref, // Only run query if id exists
   });
 
-  // const downlineQuery = useQuery({
-  //   queryKey: ["team", "downline", ref, params],
-  //   queryFn: async () => {
-  //     const response = await teamApi.getDownline({ ref, params });
-  //     return response.data;
-  //   },
-  //   staleTime: 5 * 60 * 1000, // 5 minutes
-  //   enabled: !!ref, // Only run query if id exists
-  // });
   const downlineQueryV2 = useQuery({
     queryKey: ["team", "downline", ref, params],
     queryFn: async () => {
@@ -39,6 +30,16 @@ export function useTeam(ref: string, params = {}) {
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     enabled: !!ref, // Only run query if id exists
+  });
+
+  const searchQuery = useQuery({
+    queryKey: ["search", "team", ref, params],
+    queryFn: async () => {
+      const response = await teamApi.searchMembers(params);
+      return response.data;
+    },
+    staleTime: 30 * 60 * 1000, // 10 minutes
+    enabled: params?.hasOwnProperty("search") && params?.search.length > 0, // Only run query if  search param is present
   });
 
   return {
@@ -65,5 +66,11 @@ export function useTeam(ref: string, params = {}) {
     teamStatsError: teamStatsQuery.error,
     hasTeamStatsError: teamStatsQuery.isError,
     teamStatsRefetch: teamStatsQuery.refetch,
+
+    searchMembers: searchQuery.data,
+    searchIsLoading: searchQuery.isLoading,
+    searchError: searchQuery.error,
+    hasSearchError: searchQuery.isError,
+    searchMembersRefetch: searchQuery.refetch,
   };
 }

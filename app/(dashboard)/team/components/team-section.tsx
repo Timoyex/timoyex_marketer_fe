@@ -26,7 +26,7 @@ import { useTeam } from "@/hooks/team.hook";
 import { SkeletalInfoCard } from "@/components/custom/skeleton";
 import { EmptyState, LoadingState, teamColumns } from "./columns";
 import { DataTable } from "@/components/custom/dataTable";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCursorPagination } from "@/lib/pagination-fn";
 
 const statusOptions = [
@@ -98,18 +98,33 @@ export function TeamSection() {
   const url = typeof window !== "undefined" ? window.location.hostname : "";
   const pagination = useCursorPagination();
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const { profileQuery, isLoading } = useProfile();
   const {
     teamStats: memberStats,
     teamStatsIsLoading,
     downlineMembersV2,
     downlineIsLoadingV2,
+    searchMembers,
   } = useTeam(profileQuery.data?.marketerCode || "", {
     limit: 5,
     cursor: pagination.cursor,
+    search: debouncedSearch,
   }); //tanstack query
 
-  const [searchQuery, setSearchQuery] = useState("");
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const handleInviteMember = async () => {
     const referralLink = `${url}/join/${profileQuery.data?.marketerCode}`;

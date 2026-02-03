@@ -33,6 +33,10 @@ export interface TeamQueryV2 {
   downline?: number;
 }
 
+export interface SearchTeamQuery extends TeamQueryV2 {
+  search: string;
+}
+
 export interface TeamStats {
   directMembers: number;
   totalDownlines: number;
@@ -117,6 +121,13 @@ export const teamApi = {
   // get team stats
   getTeamStats: async (ref: string): Promise<TeamStatsResponse> => {
     const response = await apiClient.get(`/v1/team/stats/${ref}`);
+    return response.data;
+  },
+
+  searchMembers: async (params?: SearchTeamQuery): Promise<TeamResponseV2> => {
+    const response = await apiClient.get(`/v1/team/search`, {
+      params,
+    });
     return response.data;
   },
 };
