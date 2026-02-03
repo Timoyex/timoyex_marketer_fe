@@ -1,7 +1,7 @@
 import { SearchTeamQuery, teamApi } from "@/lib/api/team";
 import { useQuery } from "@tanstack/react-query";
 
-export function useTeam(ref: string, params?: SearchTeamQuery) {
+export function useTeam(ref: string, params?: any) {
   const directMembersQuery = useQuery({
     queryKey: ["team", "direct", ref, params],
     queryFn: async () => {

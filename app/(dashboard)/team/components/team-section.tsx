@@ -108,9 +108,12 @@ export function TeamSection() {
     teamStatsIsLoading,
     downlineMembersV2,
     downlineIsLoadingV2,
-    searchMembers,
-    searchIsLoading,
   } = useTeam(profileQuery.data?.marketerCode || "", {
+    limit: 5,
+    cursor: pagination.cursor,
+  }); //tanstack query
+
+  const { searchMembers, searchIsLoading } = useTeam("", {
     limit: 5,
     cursor: pagination.cursor,
     search: debouncedSearch,
