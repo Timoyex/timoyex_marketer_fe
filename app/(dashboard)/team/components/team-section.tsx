@@ -109,6 +109,7 @@ export function TeamSection() {
     downlineMembersV2,
     downlineIsLoadingV2,
     searchMembers,
+    searchIsLoading,
   } = useTeam(profileQuery.data?.marketerCode || "", {
     limit: 5,
     cursor: pagination.cursor,
@@ -260,9 +261,9 @@ export function TeamSection() {
               emptyState={<LoadingState />}
             />
           )}
-          {!downlineIsLoadingV2 && (
+          {(!searchIsLoading || !downlineIsLoadingV2) && (
             <DataTable
-              data={downlineMembersV2?.members || []}
+              data={searchMembers?.members || downlineMembersV2?.members || []}
               columns={teamColumns}
               searchPlaceholder="Search by name"
               searchTerm="name"
@@ -276,21 +277,29 @@ export function TeamSection() {
                   pagination.reset();
                 },
                 hasMore:
-                  Boolean(downlineMembersV2?.nextCursor) ??
+                  Boolean(
+                    searchMembers?.nextCursor || downlineMembersV2?.nextCursor,
+                  ) ??
                   downlineMembersV2?.hasMore ??
                   false,
                 onNextPage: () => {
-                  if (downlineMembersV2?.nextCursor) {
+                  if (searchMembers?.nextCursor) {
+                    pagination.goNext(searchMembers?.nextCursor!);
+                  } else if (downlineMembersV2?.nextCursor) {
                     pagination.goNext(downlineMembersV2?.nextCursor!);
                   }
                 },
                 onPrevPage: () => {
-                  if (downlineMembersV2?.prevCursor) {
+                  if (searchMembers?.prevCursor) {
+                    pagination.goPrev(searchMembers?.prevCursor!);
+                  } else if (downlineMembersV2?.prevCursor) {
                     pagination.goPrev(downlineMembersV2?.prevCursor!);
                   }
                 },
                 onFirstPage: pagination.reset,
-                canGoPrev: !!downlineMembersV2?.prevCursor,
+                canGoPrev:
+                  !!searchMembers?.prevCursor ||
+                  !!downlineMembersV2?.prevCursor,
                 isFirstPage: pagination.cursor === null,
                 isLoading,
                 currentPageSize: downlineMembersV2?.members?.length,
