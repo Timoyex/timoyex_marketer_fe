@@ -72,5 +72,7 @@ export function useTeam(ref: string, params?: any) {
     searchError: searchQuery.error,
     hasSearchError: searchQuery.isError,
     searchMembersRefetch: searchQuery.refetch,
+    searchEnabled: searchQuery.isEnabled,
+    searchSuccess: searchQuery.isSuccess,
   };
 }

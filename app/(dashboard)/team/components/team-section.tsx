@@ -113,7 +113,7 @@ export function TeamSection() {
     cursor: pagination.cursor,
   }); //tanstack query
 
-  const { searchMembers, searchIsLoading } = useTeam("", {
+  const { searchMembers, searchIsLoading, searchEnabled } = useTeam("", {
     limit: 5,
     cursor: pagination.cursor,
     search: debouncedSearch,
@@ -281,7 +281,8 @@ export function TeamSection() {
                 },
                 hasMore:
                   Boolean(
-                    searchMembers?.nextCursor || downlineMembersV2?.nextCursor,
+                    (searchEnabled && searchMembers?.nextCursor) ||
+                    downlineMembersV2?.nextCursor,
                   ) ??
                   downlineMembersV2?.hasMore ??
                   false,
@@ -301,11 +302,13 @@ export function TeamSection() {
                 },
                 onFirstPage: pagination.reset,
                 canGoPrev:
-                  !!searchMembers?.prevCursor ||
+                  (searchEnabled && !!searchMembers?.prevCursor) ||
                   !!downlineMembersV2?.prevCursor,
                 isFirstPage: pagination.cursor === null,
                 isLoading,
-                currentPageSize: downlineMembersV2?.members?.length,
+                currentPageSize:
+                  (searchEnabled && searchMembers?.members?.length) ||
+                  downlineMembersV2?.members?.length,
               }}
             />
           )}
