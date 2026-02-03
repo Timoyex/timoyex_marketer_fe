@@ -26,7 +26,7 @@ import { useTeam } from "@/hooks/team.hook";
 import { SkeletalInfoCard } from "@/components/custom/skeleton";
 import { EmptyState, LoadingState, teamColumns } from "./columns";
 import { DataTable } from "@/components/custom/dataTable";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCursorPagination } from "@/lib/pagination-fn";
 
 const statusOptions = [
@@ -98,6 +98,10 @@ export function TeamSection() {
   const url = typeof window !== "undefined" ? window.location.hostname : "";
   const pagination = useCursorPagination();
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const { profileQuery, isLoading } = useProfile();
   const {
     teamStats: memberStats,
@@ -109,7 +113,22 @@ export function TeamSection() {
     cursor: pagination.cursor,
   }); //tanstack query
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const { searchMembers, searchIsLoading } = useTeam("", {
+    limit: 5,
+    cursor: pagination.cursor,
+    search: debouncedSearch,
+  }); //tanstack query
+
+  // Debounce search query
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
   const handleInviteMember = async () => {
     const referralLink = `${url}/join/${profileQuery.data?.marketerCode}`;
@@ -245,9 +264,9 @@ export function TeamSection() {
               emptyState={<LoadingState />}
             />
           )}
-          {!downlineIsLoadingV2 && (
+          {(!searchIsLoading || !downlineIsLoadingV2) && (
             <DataTable
-              data={downlineMembersV2?.members || []}
+              data={searchMembers?.members || downlineMembersV2?.members || []}
               columns={teamColumns}
               searchPlaceholder="Search by name"
               searchTerm="name"
@@ -261,21 +280,29 @@ export function TeamSection() {
                   pagination.reset();
                 },
                 hasMore:
-                  Boolean(downlineMembersV2?.nextCursor) ??
+                  Boolean(
+                    searchMembers?.nextCursor || downlineMembersV2?.nextCursor,
+                  ) ??
                   downlineMembersV2?.hasMore ??
                   false,
                 onNextPage: () => {
-                  if (downlineMembersV2?.nextCursor) {
+                  if (searchMembers?.nextCursor) {
+                    pagination.goNext(searchMembers?.nextCursor!);
+                  } else if (downlineMembersV2?.nextCursor) {
                     pagination.goNext(downlineMembersV2?.nextCursor!);
                   }
                 },
                 onPrevPage: () => {
-                  if (downlineMembersV2?.prevCursor) {
+                  if (searchMembers?.prevCursor) {
+                    pagination.goPrev(searchMembers?.prevCursor!);
+                  } else if (downlineMembersV2?.prevCursor) {
                     pagination.goPrev(downlineMembersV2?.prevCursor!);
                   }
                 },
                 onFirstPage: pagination.reset,
-                canGoPrev: !!downlineMembersV2?.prevCursor,
+                canGoPrev:
+                  !!searchMembers?.prevCursor ||
+                  !!downlineMembersV2?.prevCursor,
                 isFirstPage: pagination.cursor === null,
                 isLoading,
                 currentPageSize: downlineMembersV2?.members?.length,
